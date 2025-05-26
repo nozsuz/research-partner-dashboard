@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リサーチパートナー・ダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar h1 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .menu-item {
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .menu-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+        
+        .menu-item.active {
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .project-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .search-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .search-options {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .researcher-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .researcher-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .researcher-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .researcher-info {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .score-badge {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            border-top: 1px solid #e9ecef;
+            margin-top: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .tab:hover {
+            background-color: #f8f9fa;
+        }
+
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            border-left: 4px solid #667eea;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-planned {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h1>🤝 リサーチパートナー</h1>
+            <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
+            
+            <div class="menu-item active" onclick="showPage('researchers')">
+                🔍 研究者検索
+            </div>
+            <div class="menu-item" onclick="showPage('projects')">
+                📊 マイプロジェクト
+            </div>
+            <div class="menu-item" onclick="showPage('contracts')">
+                📄 契約・知財サポート
+            </div>
+            <div class="menu-item" onclick="showPage('funding')">
+                💰 資金調達サポート
+            </div>
+            <div class="menu-item" onclick="showPage('settings')">
+                ⚙️ アカウント設定
+            </div>
+            
+            <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
+            
+            <div class="project-info">
+                <h4>進行中のプロジェクト（例）</h4>
+                <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; margin-top: 10px;">
+                    進行中: 次世代AI材料探索プロジェクト
+                </div>
+            </div>
+            
+            <button class="logout-btn" onclick="showLogoutMessage()">ログアウト</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- 研究者検索ページ -->
+            <div id="researchers-page" class="page">
+                <div class="header">
+                    <h1>🔍 研究者検索</h1>
+                    <p>25万人超の研究者データベースから、AIと専門コンサルタントが貴社に最適な研究者を抽出します。</p>
+                </div>
+
+                <div class="search-section">
+                    <div class="search-options">
+                        <h3 style="margin-bottom: 15px;">詳細検索オプション</h3>
+                        
+                        <div class="form-group">
+                            <label>検索方法</label>
+                            <select class="form-control">
+                                <option>セマンティック検索（推奨）</option>
+                                <option>キーワード検索</option>
+                            </select>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="llm-expansion" checked>
+                            <label for="llm-expansion">🧠 AIによるキーワード拡張</label>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="llm-summary" checked>
+                            <label for="llm-summary">⚡ AIによる関連性要約表示</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>最大表示件数: 3</label>
+                            <input type="range" min="1" max="10" value="3" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="searchResearchers()" style="width: 100%;">
+                        研究者を検索
+                    </button>
+                </div>
+
+                <div id="search-results" class="hidden">
+                    <div class="alert alert-success">
+                        「人工知能」の検索結果: 5件見つかりました。
+                    </div>
+
+                    <div class="researcher-card">
+                        <div class="researcher-name">研究者A (関連: 人工知能)</div>
+                        <div class="researcher-info"><span class="info-label">所属:</span> 最先端大学</div>
+                        <div class="researcher-info"><span class="info-label">専門キーワード:</span> AI, 機械学習, ディープラーニング</div>
+                        
+                        <div class="ai-summary">
+                            <strong>AIによる関連性要約:</strong> この研究者は「人工知能」の分野において、特に「AI」に関する深い知見を有しています。プロフィールには「AI分野の世界的権威。特に画像認識と自動運転技術...」といった記述があり、貴社の課題解決に貢献できる可能性が高いです。
+                        </div>
+                        
+                        <div class="score-badge">AI関連度スコア: 0.95</div>
+                        
+                        <div class="button-group">
+                            <button class="btn btn-secondary">詳細を見る</button>
+                            <button class="btn btn-primary">プロジェクト候補に追加</button>
+                        </div>
+                    </div>
+
+                    <div class="researcher-card">
+                        <div class="researcher-name">研究者D (関連: 人工知能)</div>
+                        <div class="researcher-info"><span class="info-label">所属:</span> 最先端大学</div>
+                        <div class="researcher-info"><span class="info-label">専門キーワード:</span> AI, 自然言語処理, 対話システム</div>
+                        
+                        <div class="ai-summary">
+                            <strong>AIによる関連性要約:</strong> この研究者は「人工知能」の分野において、特に「AI」に関する深い知見を有しています。プロフィールには「人間と自然に対話できるAIアシスタント...」といった記述があり、貴社の課題解決に貢献できる可能性が高いです。
+                        </div>
+                        
+                        <div class="score-badge">AI関連度スコア: 0.85</div>
+                        
+                        <div class="button-group">
+                            <button class="btn btn-secondary">詳細を見る</button>
+                            <button class="btn btn-primary">プロジェクト候補に追加</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="no-search" class="alert alert-info">
+                    キーワードを入力して「研究者を検索」ボタンを押してください。
+                </div>
+            </div>
+
+            <!-- マイプロジェクトページ -->
+            <div id="projects-page" class="page hidden">
+                <div class="header">
+                    <h1>📊 マイプロジェクト</h1>
+                    <p>選定から契約、実施、成果管理まで、専任のプロジェクトマネージャー(PM)が貴社の研究開発プロジェクトを伴走支援します。</p>
+                </div>
+
+                <h2>進行中のプロジェクト</h2>
+                
+                <div class="project-card">
+                    <h3>次世代AI材料探索プロジェクト</h3>
+                    <div style="display: flex; gap: 20px; margin: 15px 0;">
+                        <div>
+                            <span class="status-badge status-active">進行中</span>
+                        </div>
+                        <div>担当PM: 田中 一郎 (弊社PM)</div>
+                        <div>目標期限: 2024-12-31</div>
+                    </div>
+                    <p>マッチング研究者: 研究者B</p>
+                    <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;">プロジェクト詳細・進捗管理へ</button>
+                </div>
+
+                <div class="project-card">
+                    <h3>AI創薬プラットフォーム開発</h3>
+                    <div style="display: flex; gap: 20px; margin: 15px 0;">
+                        <div>
+                            <span class="status-badge status-planned">計画中</span>
+                        </div>
+                        <div>担当PM: 佐藤 花子 (弊社PM)</div>
+                        <div>目標期限: 2025-03-31</div>
+                    </div>
+                    <p>マッチング研究者: 研究者A</p>
+                    <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;">プロジェクト詳細・進捗管理へ</button>
+                </div>
+
+                <div class="project-card">
+                    <h3>遺伝子治療法の安全性評価研究</h3>
+                    <div style="display: flex; gap: 20px; margin: 15px 0;">
+                        <div>
+                            <span class="status-badge status-completed">完了</span>
+                        </div>
+                        <div>担当PM: 鈴木 次郎 (弊社PM)</div>
+                        <div>目標期限: 2023-09-30</div>
+                    </div>
+                    <p>マッチング研究者: 研究者C</p>
+                    <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;">プロジェクト詳細・進捗管理へ</button>
+                </div>
+
+                <hr>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 20px;">新しいプロジェクトを開始する</button>
+            </div>
+
+            <!-- 契約・知財サポートページ -->
+            <div id="contracts-page" class="page hidden">
+                <div class="header">
+                    <h1>📄 契約・知財サポート</h1>
+                    <p>標準契約書の雛形提供、大学や研究機関との窓口交渉代行、知財戦略の策定までワンストップで支援します。</p>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" onclick="showTab('contracts', 'templates')">📄 契約書テンプレート</div>
+                    <div class="tab" onclick="showTab('contracts', 'consultation')">🤝 専門家相談・交渉代行</div>
+                    <div class="tab" onclick="showTab('contracts', 'faq')">❓ よくあるご質問 (FAQ)</div>
+                </div>
+
+                <div id="contracts-templates" class="tab-content active">
+                    <h3>契約書テンプレートライブラリ</h3>
+                    <p>研究開発の各フェーズで必要となる契約書の標準テンプレートをご用意しています。</p>
+                    
+                    <table class="data-table" style="margin: 20px 0;">
+                        <thead>
+                            <tr>
+                                <th>テンプレート名</th>
+                                <th>カテゴリ</th>
+                                <th>最終更新日</th>
+                                <th>概要</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>共同研究契約書雛形 (大学連携標準)</td>
+                                <td>共同研究</td>
+                                <td>2024-05-01</td>
+                                <td>大学との共同研究に最適化された標準雛形です。知的財産権の取り扱い条項を含みます。</td>
+                            </tr>
+                            <tr>
+                                <td>業務委託契約書雛形 (技術コンサルティング)</td>
+                                <td>業務委託</td>
+                                <td>2024-04-15</td>
+                                <td>外部技術コンサルタントへの業務委託時に利用可能な汎用雛形。</td>
+                            </tr>
+                            <tr>
+                                <td>秘密保持契約書 (NDA) - 双方向</td>
+                                <td>NDA</td>
+                                <td>2023-11-20</td>
+                                <td>双方の秘密情報を保護するための標準的なNDA雛形です。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <button class="btn btn-primary" style="width: 100%;">選択したテンプレートをダウンロード</button>
+                </div>
+
+                <div id="contracts-consultation" class="tab-content">
+                    <h3>専門家への相談・交渉代行</h3>
+                    <p>契約内容の確認、知財戦略に関するアドバイス、大学や研究機関との条件交渉など、専門知識を持つコンサルタントや提携弁護士・弁理士がサポートします。</p>
+                    
+                    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); margin-top: 20px;">
+                        <h4>相談フォーム</h4>
+                        <div class="form-group">
+                            <label>お名前（ご担当者様）</label>
+                            <input type="text" class="form-control" placeholder="山田 太郎">
+                        </div>
+                        <div class="form-group">
+                            <label>メールアドレス</label>
+                            <input type="email" class="form-control" placeholder="taro.yamada@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>会社・機関名</label>
+                            <input type="text" class="form-control" placeholder="株式会社〇〇">
+                        </div>
+                        <div class="form-group">
+                            <label>ご相談種別</label>
+                            <select class="form-control">
+                                <option>契約関連（レビュー・作成支援）</option>
+                                <option>知的財産関連（戦略・出願相談）</option>
+                                <option>大学・研究機関との交渉代行</option>
+                                <option>その他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>ご相談内容詳細</label>
+                            <textarea class="form-control" rows="4" placeholder="例: 〇〇大学との共同研究契約について、特に知財権の帰属条項について相談したい。"></textarea>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%;">相談内容を送信する</button>
+                    </div>
+                </div>
+
+                <div id="contracts-faq" class="tab-content">
+                    <h3>よくあるご質問 (FAQ)</h3>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <h4>Q1: 大学との共同研究契約で最も注意すべき点は何ですか？</h4>
+                        <p>A1: 知的財産権の帰属と実施条件、秘密保持義務の範囲と期間、研究成果の公表ルール、契約終了後の権利義務などが主要なポイントです。弊社の提供するテンプレートはこれらの点を網羅していますが、個別の状況に合わせて専門家にご相談いただくことを推奨します。</p>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <h4>Q2: 研究成果の特許化についても支援してもらえますか？</h4>
+                        <p>A2: はい、提携している弁理士と連携し、発明の発掘から特許戦略の立案、出願手続き、権利化後の管理までトータルでサポート可能です。まずはお気軽にご相談ください。</p>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <h4>Q3: 契約書の雛形は自社の状況に合わせてカスタマイズできますか？</h4>
+                        <p>A3: はい、提供する雛形はあくまで標準的なものです。貴社の具体的な状況やニーズに合わせてカスタマイズする際の法的アドバイスや、相手方との交渉支援も行っています。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 資金調達サポートページ -->
+            <div id="funding-page" class="page hidden">
+                <div class="header">
+                    <h1>💰 資金調達サポート</h1>
+                    <p>研究開発プロジェクトに必要な資金調達を多角的にサポートします。国や地方自治体の補助金・助成金の申請支援もお任せください。</p>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" onclick="showTab('funding', 'search')">🪙 補助金・助成金情報検索</div>
+                    <div class="tab" onclick="showTab('funding', 'support')">📝 申請準備・実行サポート</div>
+                    <div class="tab" onclick="showTab('funding', 'cases')">🏆 採択事例紹介</div>
+                </div>
+
+                <div id="funding-search" class="tab-content active">
+                    <h3>利用可能な補助金・助成金検索</h3>
+                    <p>貴社の研究テーマや事業フェーズに合った公的資金調達プログラムを検索できます。</p>
+                    
+                    <div style="display: flex; gap: 20px; margin: 20px 0;">
+                        <div style="flex: 1;">
+                            <input type="text" class="form-control" placeholder="例: AI, バイオ, スタートアップ">
+                        </div>
+                        <div style="flex: 1;">
+                            <select class="form-control" multiple>
+                                <option>AI全般</option>
+                                <option>医療・バイオ</option>
+                                <option>全分野 (スタートアップ限定)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <table class="data-table" style="margin: 20px 0;">
+                        <thead>
+                            <tr>
+                                <th>プログラム名</th>
+                                <th>対象分野</th>
+                                <th>申請締切</th>
+                                <th>最大助成額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>革新的AI技術開発支援プログラム (経産省)</td>
+                                <td>AI全般</td>
+                                <td>2024-08-31</td>
+                                <td>5,000万円</td>
+                            </tr>
+                            <tr>
+                                <td>次世代医療基盤技術開発事業 (AMED)</td>
+                                <td>医療・バイオ</td>
+                                <td>2024-09-30</td>
+                                <td>1億円</td>
+                            </tr>
+                            <tr>
+                                <td>スタートアップ向け研究開発助成金 (NEDO)</td>
+                                <td>全分野 (スタートアップ限定)</td>
+                                <td>随時募集</td>
+                                <td>1,000万円</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <p style="color: #7f8c8d;">3件のプログラムを表示中</p>
+                    <button class="btn btn-secondary" style="width: 100%;">詳細条件で絞り込む（モック）</button>
+                </div>
+
+                <div id="funding-support" class="tab-content">
+                    <h3>補助金申請準備・実行サポート</h3>
+                    <p>専門のコンサルタントが、事業計画書の策定から申請書類のブラッシュアップ、面接対策まで、採択に向けたプロセスをトータルでサポートします。</p>
+                    
+                    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); margin: 20px 0;">
+                        <img src="https://via.placeholder.com/700x250.png?text=Our+Funding+Application+Support+Process" style="width: 100%; border-radius: 8px; margin-bottom: 15px;">
+                        <p style="text-align: center; color: #7f8c8d; font-size: 14px;">申請サポートのステップ（イメージ図）: 1.ヒアリング・戦略策定 → 2.事業計画書作成支援 → 3.申請書類レビュー → 4.面接対策 → 5.採択後フォロー</p>
+                    </div>
+                    
+                    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05);">
+                        <h4>主なサポート内容:</h4>
+                        <ul style="line-height: 1.8; margin-left: 20px;">
+                            <li>最新の補助金・助成金情報のカスタム提供</li>
+                            <li>採択可能性の高いプログラムの選定アドバイス</li>
+                            <li>審査員に響く事業計画書・申請書類の共同作成およびブラッシュアップ</li>
+                            <li>加点要素の洗い出しと効果的なアピール方法の指導</li>
+                            <li>面接審査やプレゼンテーションの練習・対策（必要な場合）</li>
+                            <li>採択後の手続きや報告に関するアドバイス</li>
+                        </ul>
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 20px;">申請サポートを申し込む・相談する</button>
+                    </div>
+                </div>
+
+                <div id="funding-cases" class="tab-content">
+                    <h3>採択事例紹介</h3>
+                    
+                    <div class="alert alert-success">
+                        <h4>事例1: 株式会社ABC様 - 革新的AI技術開発支援プログラム採択 (助成額: 3,000万円)</h4>
+                        <p><strong>課題:</strong> 独自のAIアルゴリズムを開発したが、実用化に向けた開発資金が不足していた。</p>
+                        <p><strong>支援内容:</strong> 事業計画の独自性と市場優位性を強調する申請戦略を立案。専門家による事業計画書の徹底的なレビューとプレゼン指導を実施。</p>
+                        <p><strong>成果:</strong> 難易度の高いプログラムであったが、弊社の伴走支援により、事業計画の新規性と実現可能性が高く評価され、満額での採択に成功。</p>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h4>事例2: XYZ大学 先端医療研究センター様 - 次世代医療基盤技術開発事業採択 (助成額: 8,000万円)</h4>
+                        <p><strong>課題:</strong> 先進的な再生医療技術のシーズを持っていたが、大型予算獲得のための申請ノウハウが不足していた。</p>
+                        <p><strong>支援内容:</strong> 産学連携スキームの構築支援と、研究の社会的インパクトを明確に示す申請書類作成をサポート。公的機関との連携実績をアピール。</p>
+                        <p><strong>成果:</strong> 複数年にわたる大型研究プロジェクトの予算獲得に成功。研究開発を大幅に加速。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アカウント設定ページ -->
+            <div id="settings-page" class="page hidden">
+                <div class="header">
+                    <h1>⚙️ アカウント設定</h1>
+                </div>
+
+                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); margin-bottom: 30px;">
+                    <h3>ユーザー情報</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                        <div class="form-group">
+                            <label>氏名</label>
+                            <input type="text" class="form-control" value="山田 太郎">
+                        </div>
+                        <div class="form-group">
+                            <label>所属企業・機関名</label>
+                            <input type="text" class="form-control" value="株式会社サンプル">
+                        </div>
+                        <div class="form-group">
+                            <label>メールアドレス</label>
+                            <input type="email" class="form-control" value="taro.yamada@example.com" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>部署名・役職</label>
+                            <input type="text" class="form-control" value="研究開発部 部長">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">ユーザー情報を更新する</button>
+                </div>
+
+                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); margin-bottom: 30px;">
+                    <h3>通知設定</h3>
+                    <p>受け取りたいメール通知を選択してください。</p>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" checked>
+                        <label>新しい研究者の推薦・マッチング通知</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" checked>
+                        <label>担当プロジェクトの進捗更新通知</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox">
+                        <label>関連する補助金・助成金の最新情報</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" checked>
+                        <label>契約・知財に関する重要なお知らせ</label>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">通知設定を保存する</button>
+                </div>
+
+                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05);">
+                    <h3>パスワード変更</h3>
+                    <div class="form-group">
+                        <label>現在のパスワード</label>
+                        <input type="password" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>新しいパスワード</label>
+                        <input type="password" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>新しいパスワード（確認用）</label>
+                        <input type="password" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;">パスワードを変更する</button>
+                </div>
+            </div>
+
+            <div class="footer">
+                © 2024 Your Company Name. All Rights Reserved. | このダッシュボードはモックアップです。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPage(page) {
+            // すべてのページを非表示
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.classList.add('hidden'));
+            
+            // 選択されたページを表示
+            document.getElementById(page + '-page').classList.remove('hidden');
+            
+            // メニューアイテムのactive状態を更新
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showTab(section, tab) {
+            // すべてのタブコンテンツを非表示
+            const tabContents = document.querySelectorAll(`#${section}-page .tab-content`);
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // 選択されたタブコンテンツを表示
+            document.getElementById(`${section}-${tab}`).classList.add('active');
+            
+            // タブのactive状態を更新
+            const tabs = document.querySelectorAll(`#${section}-page .tab`);
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function searchResearchers() {
+            const searchInput = document.getElementById('search-input');
+            const searchValue = searchInput.value.trim();
+            
+            if (searchValue) {
+                // ローディング表示
+                document.getElementById('no-search').classList.add('hidden');
+                document.getElementById('search-results').classList.add('hidden');
+                
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loading';
+                loadingDiv.className = 'loading';
+                loadingDiv.innerHTML = '<div class="spinner"></div>検索中...';
+                document.querySelector('#researchers-page').appendChild(loadingDiv);
+                
+                // 2秒後に結果を表示
+                setTimeout(() => {
+                    document.getElementById('loading').remove();
+                    document.getElementById('search-results').classList.remove('hidden');
+                }, 2000);
+            } else {
+                alert('検索キーワードを入力してください。');
+            }
+        }
+
+        function showLogoutMessage() {
+            alert('ログアウトしました。');
+        }
+
+        // ボタンクリックイベントの追加
+        document.addEventListener('click', function(e) {
+            if (e.target.textContent.includes('詳細を見る')) {
+                alert('研究者の詳細ページへ遷移します（モック機能）');
+            }
+            if (e.target.textContent.includes('プロジェクト候補に追加')) {
+                alert('研究者をプロジェクト候補に追加しました。');
+            }
+            if (e.target.textContent.includes('プロジェクト詳細・進捗管理へ')) {
+                alert('プロジェクト詳細・進捗管理ページへ遷移します（モック機能）');
+            }
+            if (e.target.textContent.includes('新しいプロジェクトを開始する')) {
+                alert('新規プロジェクト作成フォームが表示されます（モック機能）');
+            }
+            if (e.target.textContent.includes('相談内容を送信する')) {
+                alert('ご相談ありがとうございます。担当者より3営業日以内に折り返しご連絡いたします。');
+            }
+            if (e.target.textContent.includes('申請サポートを申し込む')) {
+                alert('申請サポートに関するお問い合わせフォームが表示されます（モック機能）');
+            }
+            if (e.target.textContent.includes('更新する') || e.target.textContent.includes('保存する') || e.target.textContent.includes('変更する')) {
+                alert('設定を保存しました（モック機能）');
+            }
+        });
+    </script>
+</body>
+</html>
