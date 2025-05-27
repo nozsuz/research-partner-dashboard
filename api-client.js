@@ -4,7 +4,7 @@ class ResearcherSearchAPI {
         // 環境に応じてAPIのベースURLを設定
         this.baseURL = window.location.hostname === 'localhost' 
             ? 'http://localhost:8000'  // ローカル開発
-            : 'https://【実際のRailway URLをここに入力】';  // 本番環境
+            : 'https://research-partner-dashboard.vercel.app';  // 本番環境
         
         console.log('API Base URL:', this.baseURL);
         console.log('Current hostname:', window.location.hostname);
