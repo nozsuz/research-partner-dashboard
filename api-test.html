@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API接続テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .test-button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 4px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .url-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API接続テストツール</h1>
+        
+        <div>
+            <h3>APIサーバーURL設定</h3>
+            <input type="text" id="api-url" class="url-input" 
+                   value="https://researcher-search-app-production-xxxx.up.railway.app" 
+                   placeholder="Railway APIサーバーのURLを入力">
+            <small>※ Railway管理画面のNetworking > Public Networkingで確認できます</small>
+        </div>
+
+        <div>
+            <h3>接続テスト</h3>
+            <button class="test-button" onclick="testBasicConnection()">基本接続テスト</button>
+            <button class="test-button" onclick="testHealthEndpoint()">ヘルスチェック</button>
+            <button class="test-button" onclick="testSearchEndpoint()">検索APIテスト</button>
+            <button class="test-button" onclick="runAllTests()">全テスト実行</button>
+            <button class="test-button" onclick="clearResults()">結果クリア</button>
+        </div>
+
+        <div id="test-results"></div>
+
+        <div>
+            <h3>よくあるRailway URL例</h3>
+            <ul>
+                <li><code>web-production-xxxx.up.railway.app</code></li>
+                <li><code>researcher-search-app-production.up.railway.app</code></li>
+                <li><code>your-project-name-production.up.railway.app</code></li>
+            </ul>
+            <p><strong>注意:</strong> URLの最後に <code>/</code> は含めないでください</p>
+        </div>
+
+        <div>
+            <h3>トラブルシューティング</h3>
+            <ul>
+                <li><strong>CORS エラー:</strong> ブラウザの開発者ツールでCORSエラーを確認</li>
+                <li><strong>タイムアウト:</strong> サーバーの起動に時間がかかっている可能性</li>
+                <li><strong>404 エラー:</strong> URLが間違っているか、サーバーが停止中</li>
+                <li><strong>500 エラー:</strong> サーバー内部エラー（環境変数やGCP認証の問題）</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function getApiUrl() {
+            const url = document.getElementById('api-url').value.trim();
+            return url.endsWith('/') ? url.slice(0, -1) : url;
+        }
+
+        function displayResult(test, status, message, details = null) {
+            const resultsDiv = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const statusClass = status === 'success' ? 'success' : 
+                               status === 'loading' ? 'loading' : 'error';
+            
+            const detailsHtml = details ? `<pre>${JSON.stringify(details, null, 2)}</pre>` : '';
+            
+            const resultHtml = `
+                <div class="result ${statusClass}">
+                    <strong>[${timestamp}] ${test}:</strong> ${message}
+                    ${detailsHtml}
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+
+        async function testBasicConnection() {
+            const apiUrl = getApiUrl();
+            displayResult('基本接続テスト', 'loading', '接続確認中...');
+            
+            try {
+                const response = await fetch(`${apiUrl}/`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    signal: AbortSignal.timeout(10000)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayResult('基本接続テスト', 'success', 
+                        `接続成功 (${response.status} ${response.statusText})`, data);
+                } else {
+                    displayResult('基本接続テスト', 'error', 
+                        `HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                let errorDetails = {
+                    name: error.name,
+                    message: error.message,
+                    url: `${apiUrl}/`
+                };
+                
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorDetails.suggestion = 'CORSエラーまたはサーバー停止の可能性';
+                } else if (error.name === 'TimeoutError') {
+                    errorDetails.suggestion = 'サーバーの応答が遅すぎます';
+                }
+                
+                displayResult('基本接続テスト', 'error', 
+                    `接続失敗: ${error.message}`, errorDetails);
+            }
+        }
+
+        async function testHealthEndpoint() {
+            const apiUrl = getApiUrl();
+            displayResult('ヘルスチェック', 'loading', 'ヘルスチェック実行中...');
+            
+            try {
+                const response = await fetch(`${apiUrl}/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    signal: AbortSignal.timeout(10000)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayResult('ヘルスチェック', 'success', 
+                        `ヘルスチェック成功 (${response.status})`, data);
+                } else {
+                    displayResult('ヘルスチェック', 'error', 
+                        `HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                displayResult('ヘルスチェック', 'error', 
+                    `ヘルスチェック失敗: ${error.message}`);
+            }
+        }
+
+        async function testSearchEndpoint() {
+            const apiUrl = getApiUrl();
+            displayResult('検索APIテスト', 'loading', '検索APIテスト実行中...');
+            
+            try {
+                const testQuery = {
+                    query: "人工知能",
+                    method: "semantic",
+                    max_results: 2,
+                    use_llm_expansion: false,
+                    use_llm_summary: false
+                };
+                
+                const response = await fetch(`${apiUrl}/api/search`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testQuery),
+                    signal: AbortSignal.timeout(30000)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayResult('検索APIテスト', 'success', 
+                        `検索API成功 - ${data.total}件見つかりました (${data.execution_time.toFixed(2)}秒)`, 
+                        {
+                            query: data.query,
+                            method: data.method,
+                            total: data.total,
+                            execution_time: data.execution_time,
+                            executed_query_info: data.executed_query_info,
+                            first_result_name: data.results[0]?.name_ja || 'なし'
+                        });
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    displayResult('検索APIテスト', 'error', 
+                        `HTTP ${response.status}: ${response.statusText}`, errorData);
+                }
+            } catch (error) {
+                displayResult('検索APIテスト', 'error', 
+                    `検索APIテスト失敗: ${error.message}`);
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            displayResult('全テスト実行', 'loading', '全テストを順次実行中...');
+            
+            await testBasicConnection();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機
+            
+            await testHealthEndpoint();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機
+            
+            await testSearchEndpoint();
+            
+            displayResult('全テスト実行', 'success', '全テスト完了');
+        }
+
+        // ページロード時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('API接続テストツール初期化完了');
+            
+            // URL入力時のエンターキー対応
+            document.getElementById('api-url').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    testBasicConnection();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
