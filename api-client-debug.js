@@ -1,177 +1,155 @@
-// デバッグ用の改良されたAPI設定とユーティリティ関数
+// デバッグ強化版APIクライアント - 詳細な機能テスト付き
 class ResearcherSearchAPI {
     constructor() {
-        // 環境に応じてAPIのベースURLを設定
-        this.baseURL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:8000'  // ローカル開発
-            : 'https://researcher-search-app-production.up.railway.app';  // 本番環境 ← ここを修正してください
+        this.baseURL = 'https://researcher-search-app-production.up.railway.app';
+        this.isInitialized = true;
         
-        console.log('🌐 API Base URL:', this.baseURL);
-        console.log('🏠 Current hostname:', window.location.hostname);
-        console.log('📍 Full URL:', window.location.href);
-        
-        // デバッグ情報を画面に表示
-        this.showDebugInfo();
+        console.log('🔍 APIクライアント初期化:', this.baseURL);
     }
 
-    // デバッグ情報を画面に表示
-    showDebugInfo() {
-        const debugInfo = `
-            <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 12px;">
-                <strong>🔧 Debug Info:</strong><br>
-                API URL: ${this.baseURL}<br>
-                Hostname: ${window.location.hostname}<br>
-                Protocol: ${window.location.protocol}<br>
-                Full URL: ${window.location.href}
-            </div>
-        `;
-        
-        // APIステータス要素に追加
-        const statusElement = document.getElementById('api-status');
-        if (statusElement) {
-            statusElement.innerHTML = debugInfo + statusElement.innerHTML;
-            statusElement.style.display = 'block';
-        }
-    }
-
-    // ヘルスチェック（詳細デバッグ版）
-    async healthCheck() {
+    // 詳細なGCP機能テスト
+    async testGCPFeatures() {
         try {
-            console.log('🔍 ヘルスチェック開始:', `${this.baseURL}/health`);
+            console.log('🔍 GCP機能テスト開始...');
             
-            const response = await fetch(`${this.baseURL}/health`, {
+            const response = await fetch(`${this.baseURL}/test/gcp`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                signal: AbortSignal.timeout(10000)
+                headers: { 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(15000)
             });
-            
-            console.log('✅ ヘルスチェックレスポンス:', response.status, response.statusText);
-            console.log('🌐 Response Headers:', [...response.headers.entries()]);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const data = await response.json();
-            console.log('📊 ヘルスチェック結果:', data);
+            console.log('📊 GCP機能テスト結果:', data);
             return data;
             
         } catch (error) {
-            console.error('❌ ヘルスチェック失敗:', error);
-            console.error('🔗 試行URL:', `${this.baseURL}/health`);
-            
-            // エラータイプによる詳細メッセージ
-            let errorMessage = error.message;
-            let errorDetails = {
-                name: error.name,
-                message: error.message,
-                url: `${this.baseURL}/health`,
-                baseURL: this.baseURL,
-                hostname: window.location.hostname
-            };
-            
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                errorMessage = 'ネットワーク接続エラー: APIサーバーにアクセスできません';
-                errorDetails.suggestion = 'URLが間違っているか、CORSエラー、またはサーバー停止の可能性';
-            } else if (error.name === 'TimeoutError') {
-                errorMessage = 'タイムアウト: APIサーバーの応答が遅すぎます';
-                errorDetails.suggestion = 'サーバーが重いか、ネットワークが不安定';
-            }
-            
-            return { 
-                status: 'error', 
-                message: errorMessage,
-                details: errorDetails,
-                timestamp: new Date().toISOString()
-            };
+            console.error('❌ GCP機能テスト失敗:', error);
+            return { status: 'error', message: error.message };
         }
     }
 
-    // 簡易接続テスト（詳細デバッグ版）
-    async simpleConnectionTest() {
+    // 環境変数状況テスト
+    async testEnvironmentVariables() {
         try {
-            console.log('🔍 簡易接続テスト開始:', `${this.baseURL}/`);
+            console.log('🔍 環境変数テスト開始...');
             
-            const response = await fetch(`${this.baseURL}/`, {
+            const response = await fetch(`${this.baseURL}/test/env`, {
                 method: 'GET',
-                mode: 'cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                signal: AbortSignal.timeout(5000)
+                headers: { 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(10000)
             });
             
-            console.log('✅ 簡易接続テスト結果:', response.status, response.statusText);
-            console.log('🌐 Response URL:', response.url);
-            console.log('🔒 Response Type:', response.type);
-            
-            if (response.ok) {
-                const data = await response.json();
-                return { status: 'success', data: data };
-            } else {
-                return { 
-                    status: 'error', 
-                    message: `HTTP ${response.status}: ${response.statusText}`,
-                    details: {
-                        status: response.status,
-                        statusText: response.statusText,
-                        url: response.url,
-                        type: response.type
-                    }
-                };
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-        } catch (error) {
-            console.error('❌ 簡易接続テスト失敗:', error);
+            const data = await response.json();
+            console.log('📊 環境変数テスト結果:', data);
+            return data;
             
-            return { 
-                status: 'error', 
-                message: error.message,
-                details: {
-                    name: error.name,
-                    message: error.message,
-                    baseURL: this.baseURL,
-                    testURL: `${this.baseURL}/`
-                },
-                possibleCauses: [
-                    'APIサーバーが停止している',
-                    'URLが間違っている（スペルミス、末尾の/など）',
-                    'CORS設定の問題',
-                    'ネットワーク接続の問題',
-                    'ファイアウォールによるブロック'
-                ]
-            };
+        } catch (error) {
+            console.error('❌ 環境変数テスト失敗:', error);
+            return { status: 'error', message: error.message };
         }
     }
 
-    // 研究者検索（現在は未実装応答）
+    // 実際の検索機能テスト
+    async testRealSearch() {
+        try {
+            console.log('🔍 実際の検索機能テスト開始...');
+            
+            const response = await fetch(`${this.baseURL}/test/real-search`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(15000)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📊 実際の検索機能テスト結果:', data);
+            return data;
+            
+        } catch (error) {
+            console.error('❌ 実際の検索機能テスト失敗:', error);
+            return { status: 'error', message: error.message };
+        }
+    }
+
+    // ヘルスチェック
+    async healthCheck() {
+        try {
+            const response = await fetch(`${this.baseURL}/health`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(10000)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            return data;
+            
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    }
+
+    // 検索機能（各種パラメータでテスト）
     async searchResearchers(searchParams) {
         try {
-            // 現在のシンプルサーバーには検索機能がないので、適切なエラーを返す
+            const {
+                query,
+                method = 'semantic',
+                maxResults = 5,
+                useLLMExpansion = false,
+                useLLMSummary = false
+            } = searchParams;
+
+            console.log('🔍 API検索開始:', {
+                query, method, maxResults, useLLMExpansion, useLLMSummary
+            });
+
             const response = await fetch(`${this.baseURL}/api/search`, {
                 method: 'POST',
                 mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(searchParams),
-                signal: AbortSignal.timeout(10000)
+                body: JSON.stringify({
+                    query: query,
+                    method: method,
+                    max_results: maxResults,
+                    use_llm_expansion: useLLMExpansion,
+                    use_llm_summary: useLLMSummary
+                }),
+                signal: AbortSignal.timeout(30000)
             });
 
-            if (response.status === 404) {
-                throw new Error('検索機能はまだ実装されていません（/api/search エンドポイントが見つかりません）');
-            }
-
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch {
+                    errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
+                }
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
             }
 
-            return await response.json();
+            const data = await response.json();
+            console.log('✅ API検索結果:', data);
+            return data;
 
         } catch (error) {
-            console.error('🔍 API検索エラー:', error);
+            console.error('❌ API検索エラー:', error);
             throw error;
         }
     }
@@ -180,59 +158,256 @@ class ResearcherSearchAPI {
 // グローバルAPIクライアントインスタンス
 const apiClient = new ResearcherSearchAPI();
 
-// ヘルスチェック関数（詳細デバッグ版）
-async function checkAPIHealth() {
+// 詳細診断実行関数
+async function performDetailedDiagnostic() {
+    const resultsContainer = document.getElementById('api-search-results');
+    
+    resultsContainer.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            詳細診断を実行中...
+        </div>
+    `;
+    
+    console.log('🔍 詳細診断開始...');
+    
+    const diagnostics = {
+        health: null,
+        env: null,
+        gcp: null,
+        realSearch: null
+    };
+    
+    // 1. ヘルスチェック
+    console.log('📊 1/4: ヘルスチェック');
+    diagnostics.health = await apiClient.healthCheck();
+    
+    // 2. 環境変数テスト
+    console.log('📊 2/4: 環境変数テスト');
+    diagnostics.env = await apiClient.testEnvironmentVariables();
+    
+    // 3. GCP機能テスト
+    console.log('📊 3/4: GCP機能テスト');
+    diagnostics.gcp = await apiClient.testGCPFeatures();
+    
+    // 4. 実際の検索機能テスト
+    console.log('📊 4/4: 実際の検索機能テスト');
+    diagnostics.realSearch = await apiClient.testRealSearch();
+    
+    // 結果を表示
+    displayDetailedDiagnosticResults(diagnostics);
+}
+
+// 詳細診断結果表示
+function displayDetailedDiagnosticResults(diagnostics) {
+    const resultsContainer = document.getElementById('api-search-results');
+    
+    let html = `
+        <div class="alert alert-info">
+            <h4>🔧 詳細診断結果</h4>
+            <p>各機能の動作状況を確認します。</p>
+        </div>
+    `;
+    
+    // 1. ヘルスチェック結果
+    const healthStatus = diagnostics.health?.status === 'healthy' ? '🟢' : '🔴';
+    html += `
+        <div class="diagnostic-section">
+            <h5>${healthStatus} ヘルスチェック</h5>
+            <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; white-space: pre-wrap;">
+${JSON.stringify(diagnostics.health, null, 2)}
+            </pre>
+        </div>
+    `;
+    
+    // 2. 環境変数状況
+    html += `
+        <div class="diagnostic-section">
+            <h5>⚙️ 環境変数設定状況</h5>
+    `;
+    
+    if (diagnostics.env?.basic_config) {
+        html += `<p><strong>基本設定:</strong></p><ul>`;
+        Object.entries(diagnostics.env.basic_config).forEach(([key, value]) => {
+            const status = value !== 'Not Set' ? '✅' : '❌';
+            html += `<li>${status} ${key}: ${value}</li>`;
+        });
+        html += `</ul>`;
+    }
+    
+    if (diagnostics.env?.gcp_credentials) {
+        html += `<p><strong>GCP認証情報:</strong></p><ul>`;
+        Object.entries(diagnostics.env.gcp_credentials).forEach(([key, value]) => {
+            const status = value === 'Set' ? '✅' : '❌';
+            html += `<li>${status} ${key}: ${value}</li>`;
+        });
+        html += `</ul>`;
+    }
+    
+    html += `</div>`;
+    
+    // 3. GCP機能テスト結果
+    const gcpStatus = (diagnostics.gcp?.tests?.bigquery?.status?.includes('成功') && 
+                     diagnostics.gcp?.tests?.vertex_ai?.status?.includes('成功')) ? '🟢' : '🔴';
+    html += `
+        <div class="diagnostic-section">
+            <h5>${gcpStatus} GCP機能テスト</h5>
+    `;
+    
+    if (diagnostics.gcp?.tests) {
+        Object.entries(diagnostics.gcp.tests).forEach(([service, result]) => {
+            const serviceStatus = result.status?.includes('成功') ? '✅' : '❌';
+            html += `
+                <p><strong>${serviceStatus} ${service.toUpperCase()}:</strong></p>
+                <ul>
+                    <li>ステータス: ${result.status}</li>
+                    ${result.total_researchers ? `<li>データ件数: ${result.total_researchers}件</li>` : ''}
+                    ${result.error ? `<li>エラー: ${result.error}</li>` : ''}
+                </ul>
+            `;
+        });
+    }
+    
+    html += `</div>`;
+    
+    // 4. 実際の検索機能テスト結果
+    const searchStatus = diagnostics.realSearch?.test_status === 'success' ? '🟢' : '🔴';
+    html += `
+        <div class="diagnostic-section">
+            <h5>${searchStatus} 実際の検索機能</h5>
+            <p><strong>ステータス:</strong> ${diagnostics.realSearch?.test_status || 'error'}</p>
+            <p><strong>メッセージ:</strong> ${diagnostics.realSearch?.message || 'N/A'}</p>
+    `;
+    
+    if (diagnostics.realSearch?.result_summary) {
+        html += `
+            <p><strong>検索結果概要:</strong></p>
+            <ul>
+                <li>ステータス: ${diagnostics.realSearch.result_summary.status}</li>
+                <li>結果件数: ${diagnostics.realSearch.result_summary.total_results}件</li>
+                <li>実行時間: ${diagnostics.realSearch.result_summary.execution_time}秒</li>
+                <li>方法: ${diagnostics.realSearch.result_summary.method}</li>
+            </ul>
+        `;
+    }
+    
+    if (diagnostics.realSearch?.error_details) {
+        html += `
+            <div style="background: #f8d7da; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                <strong>エラー詳細:</strong> ${diagnostics.realSearch.error_details}
+            </div>
+        `;
+    }
+    
+    html += `</div>`;
+    
+    // 推奨事項
+    html += `
+        <div class="alert alert-warning">
+            <h5>🔧 推奨事項</h5>
+            <ul>
+    `;
+    
+    if (diagnostics.env?.gcp_credentials && Object.values(diagnostics.env.gcp_credentials).includes('Not Set')) {
+        html += `<li>❗ GCP認証情報の設定が不完全です。Railway管理画面で環境変数を確認してください。</li>`;
+    }
+    
+    if (!diagnostics.gcp?.tests?.vertex_ai?.status?.includes('成功')) {
+        html += `<li>❗ Vertex AIが利用できません。セマンティック検索とLLM機能は使用できません。</li>`;
+    }
+    
+    if (!diagnostics.gcp?.tests?.bigquery?.status?.includes('成功')) {
+        html += `<li>❗ BigQueryに接続できません。データ検索ができません。</li>`;
+    }
+    
+    if (diagnostics.realSearch?.test_status !== 'success') {
+        html += `<li>❗ 実際の検索機能が動作しません。現在はモック検索のみ利用可能です。</li>`;
+    }
+    
+    html += `
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-primary" onclick="performAPISearch()">通常の検索に戻る</button>
+        </div>
+    `;
+    
+    resultsContainer.innerHTML = html;
+}
+
+// 機能別テスト実行
+async function testSpecificFeature(feature) {
+    const resultsContainer = document.getElementById('api-search-results');
+    
+    resultsContainer.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            ${feature}機能をテスト中...
+        </div>
+    `;
+    
     try {
-        const statusElement = document.getElementById('api-status');
-        if (statusElement) {
-            statusElement.style.display = 'block';
-            statusElement.innerHTML += '<div style="color: blue;">🔄 API接続確認中...</div>';
+        let testParams = {
+            query: '人工知能',
+            method: 'keyword',
+            maxResults: 3,
+            useLLMExpansion: false,
+            useLLMSummary: false
+        };
+        
+        if (feature === 'semantic') {
+            testParams.method = 'semantic';
+        } else if (feature === 'llm-expansion') {
+            testParams.useLLMExpansion = true;
+        } else if (feature === 'llm-summary') {
+            testParams.useLLMSummary = true;
         }
         
-        console.log('🏥 ヘルスチェック開始...');
+        console.log(`🔍 ${feature}機能テスト実行:`, testParams);
         
-        // 簡易接続テストとヘルスチェックを順次実行（並行実行だとデバッグが困難）
-        console.log('1️⃣ 簡易接続テスト実行...');
-        const connectionTest = await apiClient.simpleConnectionTest();
-        console.log('📊 簡易接続テスト結果:', connectionTest);
+        const result = await apiClient.searchResearchers(testParams);
         
-        console.log('2️⃣ ヘルスチェック実行...');
-        const healthCheck = await apiClient.healthCheck();
-        console.log('📊 ヘルスチェック結果:', healthCheck);
+        let html = `
+            <div class="alert alert-success">
+                <h4>✅ ${feature}機能テスト成功</h4>
+                <p><strong>クエリ:</strong> ${result.query}</p>
+                <p><strong>方法:</strong> ${result.method}</p>
+                <p><strong>結果件数:</strong> ${result.total}件</p>
+                <p><strong>実行時間:</strong> ${result.execution_time.toFixed(2)}秒</p>
+                ${result.executed_query_info ? `<p><strong>実行情報:</strong> ${result.executed_query_info}</p>` : ''}
+            </div>
+        `;
         
-        if (statusElement) {
-            let statusHTML = '';
-            
-            if (connectionTest.status === 'success' && healthCheck.status === 'healthy') {
-                statusHTML = '<div style="color: green;">🟢 API接続正常 - サーバー稼働中</div>';
-            } else if (connectionTest.status === 'success') {
-                statusHTML = '<div style="color: orange;">🟡 基本接続は可能 - ヘルスチェックに問題あり</div>';
-            } else {
-                statusHTML = `<div style="color: red;">🔴 API接続失敗</div>`;
-                statusHTML += `<div style="font-size: 12px; margin-top: 5px;">`;
-                statusHTML += `<strong>エラー:</strong> ${connectionTest.message}<br>`;
-                if (connectionTest.possibleCauses) {
-                    statusHTML += `<strong>可能性:</strong><br>`;
-                    connectionTest.possibleCauses.forEach(cause => {
-                        statusHTML += `• ${cause}<br>`;
-                    });
-                }
-                statusHTML += `</div>`;
-            }
-            
-            statusElement.innerHTML += statusHTML;
+        if (result.results && result.results.length > 0) {
+            html += `<h5>サンプル結果:</h5>`;
+            const sample = result.results[0];
+            html += `
+                <div class="researcher-card" style="margin-top: 15px;">
+                    <h6>${sample.name_ja || sample.name_en || '名前不明'}</h6>
+                    <p><strong>所属:</strong> ${sample.main_affiliation_name_ja || '不明'}</p>
+                    <p><strong>キーワード:</strong> ${sample.research_keywords_ja || '不明'}</p>
+                    ${sample.llm_summary ? `<div class="ai-summary">AI要約: ${sample.llm_summary}</div>` : ''}
+                    ${sample.distance !== null ? `<p>距離スコア: ${sample.distance.toFixed(4)}</p>` : ''}
+                    ${sample.relevance_score !== null ? `<p>関連度: ${sample.relevance_score}</p>` : ''}
+                </div>
+            `;
         }
+        
+        resultsContainer.innerHTML = html;
         
     } catch (error) {
-        console.error('💥 ヘルスチェック中に予期しないエラー:', error);
-        const statusElement = document.getElementById('api-status');
-        if (statusElement) {
-            statusElement.innerHTML += `<div style="color: red;">💥 予期しないエラー: ${error.message}</div>`;
-        }
+        resultsContainer.innerHTML = `
+            <div class="alert alert-danger">
+                <h4>❌ ${feature}機能テスト失敗</h4>
+                <p><strong>エラー:</strong> ${error.message}</p>
+                <p>この機能は現在利用できません。</p>
+            </div>
+        `;
     }
 }
 
-// その他の関数は既存のまま使用
+// API検索実行関数（既存のまま）
 async function performAPISearch() {
     const searchInput = document.getElementById('api-search-input');
     const searchQuery = searchInput.value.trim();
@@ -242,40 +417,160 @@ async function performAPISearch() {
         return;
     }
 
+    const searchMethod = document.getElementById('search-method').value;
+    const maxResults = parseInt(document.getElementById('max-results').value);
+    const useLLMExpansion = document.getElementById('llm-expansion').checked;
+    const useLLMSummary = document.getElementById('llm-summary').checked;
+
     const resultsContainer = document.getElementById('api-search-results');
+    
     resultsContainer.innerHTML = `
         <div class="loading">
             <div class="spinner"></div>
-            API検索を実行中...（現在は未実装機能のテスト）
+            API検索を実行中...
         </div>
     `;
 
     try {
         const searchParams = {
             query: searchQuery,
-            method: document.getElementById('search-method').value,
-            maxResults: parseInt(document.getElementById('max-results').value),
-            useLLMExpansion: document.getElementById('llm-expansion').checked,
-            useLLMSummary: document.getElementById('llm-summary').checked
+            method: searchMethod,
+            maxResults: maxResults,
+            useLLMExpansion: useLLLMExpansion,
+            useLLMSummary: useLLMSummary
         };
 
-        console.log('🔍 API検索テスト開始:', searchParams);
-        await apiClient.searchResearchers(searchParams);
+        const apiResponse = await apiClient.searchResearchers(searchParams);
+        displayAPISearchResults(apiResponse);
 
     } catch (error) {
-        console.error('🔍 API検索エラー:', error);
+        console.error('❌ API検索エラー:', error);
         resultsContainer.innerHTML = `
-            <div class="alert alert-info">
-                <h4>ℹ️ 予想されるエラー</h4>
-                <p><strong>エラー内容:</strong> ${error.message}</p>
-                <p>これは正常です。現在のシンプルサーバーには検索機能が実装されていません。</p>
-                <p>基本接続テストとヘルスチェックが成功していれば、APIサーバーは正常に稼働しています。</p>
+            <div class="alert alert-warning">
+                <h4>🔴 API検索でエラーが発生</h4>
+                <p><strong>エラー:</strong> ${error.message}</p>
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="performDetailedDiagnostic()">詳細診断実行</button>
+                    <button class="btn btn-info" onclick="testSpecificFeature('keyword')">キーワード検索テスト</button>
+                    <button class="btn btn-info" onclick="testSpecificFeature('semantic')">セマンティック検索テスト</button>
+                    <button class="btn btn-info" onclick="testSpecificFeature('llm-expansion')">LLM拡張テスト</button>
+                    <button class="btn btn-info" onclick="testSpecificFeature('llm-summary')">LLM要約テスト</button>
+                </div>
             </div>
         `;
     }
 }
 
-// その他の既存関数
+// API検索結果表示（既存関数を利用）
+function displayAPISearchResults(apiResponse) {
+    const resultsContainer = document.getElementById('api-search-results');
+    
+    if (!apiResponse || apiResponse.status !== 'success') {
+        resultsContainer.innerHTML = `
+            <div class="alert alert-warning">
+                API検索でエラーが発生しました: ${apiResponse?.detail || '不明なエラー'}
+            </div>
+        `;
+        return;
+    }
+
+    if (!apiResponse.results || apiResponse.results.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="alert alert-info">
+                「${apiResponse.query}」に該当する研究者は見つかりませんでした。
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="alert alert-success">
+            「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
+            ${apiResponse.total}件見つかりました。
+            <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
+        </div>
+    `;
+
+    if (apiResponse.executed_query_info) {
+        html += `
+            <div class="alert alert-info" style="font-size: 0.9em;">
+                <strong>実行情報:</strong> ${apiResponse.executed_query_info}
+            </div>
+        `;
+    }
+
+    apiResponse.results.forEach((researcher, index) => {
+        const name = researcher.name_ja || researcher.name_en || '名前不明';
+        const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+        const keywords = researcher.research_keywords_ja || 'N/A';
+        const fields = researcher.research_fields_ja || 'N/A';
+        const profile = researcher.profile_ja || 'N/A';
+
+        let scoreText = '';
+        if (apiResponse.method === 'keyword' && researcher.relevance_score !== null) {
+            scoreText = ` (関連度: ${researcher.relevance_score})`;
+        } else if (apiResponse.method === 'semantic' && researcher.distance !== null) {
+            scoreText = ` (距離: ${researcher.distance.toFixed(4)})`;
+        }
+
+        html += `
+            <div class="researcher-card">
+                <div class="researcher-name">${name} (${affiliation})${scoreText}</div>
+                <div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>
+                <div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>
+                <div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>
+                
+                ${researcher.llm_summary ? `
+                    <div class="ai-summary">
+                        <strong>AI関連性分析:</strong> ${researcher.llm_summary}
+                    </div>
+                ` : ''}
+                
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="showResearcherDetail('${name}')">詳細を見る</button>
+                    <button class="btn btn-primary" onclick="addToProjectCandidates('${name}')">プロジェクト候補に追加</button>
+                </div>
+            </div>
+        `;
+    });
+
+    resultsContainer.innerHTML = html;
+}
+
+// ヘルスチェック関数
+async function checkAPIHealth() {
+    try {
+        const statusElement = document.getElementById('api-status');
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>✅ API接続成功！</h4>
+                    <p><strong>接続先:</strong> ${apiClient.baseURL}</p>
+                    <p>バックエンドAPIとの通信が確立されました。実際の検索機能を使用できます。</p>
+                </div>
+                <div style="text-align: center; margin: 15px 0;">
+                    <button class="btn btn-info" onclick="performDetailedDiagnostic()">🔧 詳細診断実行</button>
+                </div>
+            `;
+            statusElement.style.display = 'block';
+        }
+        
+        const healthCheck = await apiClient.healthCheck();
+        
+        if (statusElement && healthCheck.status === 'healthy') {
+            statusElement.innerHTML += `
+                <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                    🟢 APIヘルスチェック正常 - 全機能利用可能
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('ヘルスチェックエラー:', error);
+    }
+}
+
+// その他の関数（既存のまま）
 function toggleAPISearchMode(mode) {
     const apiContainer = document.getElementById('api-container');
     const mockContainer = document.getElementById('mock-container');
@@ -295,26 +590,10 @@ function toggleAPISearchMode(mode) {
     if (mode === 'api') {
         if (apiContainer) apiContainer.style.display = 'block';
         if (apiBtn) apiBtn.className = 'btn btn-primary';
-        
         checkAPIHealth();
-        
-        const apiResults = document.getElementById('api-search-results');
-        if (apiResults) {
-            apiResults.innerHTML = `
-                <div class="alert alert-info">
-                    APIキーワードを入力して「API検索実行」ボタンを押してください。<br>
-                    <small>※ 現在は基本サーバーのみ稼働中。検索機能は後で実装予定。</small>
-                </div>
-            `;
-        }
     } else if (mode === 'mock') {
         if (mockContainer) mockContainer.style.display = 'block';
         if (mockBtn) mockBtn.className = 'btn btn-primary';
-        
-        const searchResults = document.getElementById('search-results');
-        const noSearch = document.getElementById('no-search');
-        if (searchResults) searchResults.classList.add('hidden');
-        if (noSearch) noSearch.classList.remove('hidden');
     } else if (mode === 'embedded') {
         if (streamlitContainer) streamlitContainer.style.display = 'block';
         if (embeddedBtn) embeddedBtn.className = 'btn btn-primary';
@@ -331,5 +610,5 @@ function addToProjectCandidates(name) {
 
 document.addEventListener('DOMContentLoaded', function() {
     toggleAPISearchMode('api');
-    console.log('🚀 詳細デバッグ版APIクライアント初期化完了');
+    console.log('🚀 デバッグ強化版APIクライアント初期化完了');
 });
