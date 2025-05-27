@@ -436,7 +436,7 @@ async function performAPISearch() {
             query: searchQuery,
             method: searchMethod,
             maxResults: maxResults,
-            useLLMExpansion: useLLLMExpansion,
+            useLLMExpansion: useLLMExpansion,
             useLLMSummary: useLLMSummary
         };
 
