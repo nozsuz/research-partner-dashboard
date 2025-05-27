@@ -431,40 +431,72 @@
                 </div>
 
                 <div class="search-section">
-                    <div class="search-options">
-                        <h3 style="margin-bottom: 15px;">詳細検索オプション</h3>
-                        
-                        <div class="form-group">
-                            <label>検索方法</label>
-                            <select class="form-control">
-                                <option>セマンティック検索（推奨）</option>
-                                <option>キーワード検索</option>
-                            </select>
-                        </div>
-                        
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="llm-expansion" checked>
-                            <label for="llm-expansion">🧠 AIによるキーワード拡張</label>
-                        </div>
-                        
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="llm-summary" checked>
-                            <label for="llm-summary">⚡ AIによる関連性要約表示</label>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>最大表示件数: 3</label>
-                            <input type="range" min="1" max="10" value="3" class="form-control">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <input type="text" class="form-control" id="search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="toggleSearchMode('embedded')" id="embedded-btn">
+                            🔬 AI検索アプリを使用
+                        </button>
+                        <button class="btn btn-secondary" onclick="toggleSearchMode('mock')" id="mock-btn">
+                            📋 モックデータで確認
+                        </button>
                     </div>
                     
-                    <button class="btn btn-primary" onclick="searchResearchers()" style="width: 100%;">
-                        研究者を検索
-                    </button>
+                    <!-- Streamlitアプリ埋め込みセクション -->
+                    <div id="streamlit-container" style="display: none;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <p><strong>🔬 AI研究者検索アプリ</strong></p>
+                            <p>25万人超の研究者データベースから、AIが最適な研究者を検索します。</p>
+                        </div>
+                        <iframe 
+                            id="streamlit-iframe"
+                            src="" 
+                            width="100%" 
+                            height="800px" 
+                            frameborder="0"
+                            style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"
+                            allowfullscreen>
+                        </iframe>
+                        <p style="text-align: center; color: #7f8c8d; margin-top: 10px;">
+                            ※ 実際のAI検索アプリが表示されます
+                        </p>
+                    </div>
+                    
+                    <!-- モック検索セクション -->
+                    <div id="mock-container">
+                        <div class="search-options">
+                            <h3 style="margin-bottom: 15px;">詳細検索オプション</h3>
+                            
+                            <div class="form-group">
+                                <label>検索方法</label>
+                                <select class="form-control">
+                                    <option>セマンティック検索（推奨）</option>
+                                    <option>キーワード検索</option>
+                                </select>
+                            </div>
+                            
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="llm-expansion" checked>
+                                <label for="llm-expansion">🧠 AIによるキーワード拡張</label>
+                            </div>
+                            
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="llm-summary" checked>
+                                <label for="llm-summary">⚡ AIによる関連性要約表示</label>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>最大表示件数: 3</label>
+                                <input type="range" min="1" max="10" value="3" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="searchResearchers()" style="width: 100%;">
+                            研究者を検索（モックデータ）
+                        </button>
+                    </div>
                 </div>
 
                 <div id="search-results" class="hidden">
@@ -909,9 +941,36 @@
         }
 
         function showLogoutMessage() {
-            alert('ログアウトしました。');
+        alert('ログアウトしました。');
         }
-
+        
+        function toggleSearchMode(mode) {
+            const streamlitContainer = document.getElementById('streamlit-container');
+            const mockContainer = document.getElementById('mock-container');
+            const embeddedBtn = document.getElementById('embedded-btn');
+            const mockBtn = document.getElementById('mock-btn');
+            
+            if (mode === 'embedded') {
+                streamlitContainer.style.display = 'block';
+                mockContainer.style.display = 'none';
+                embeddedBtn.className = 'btn btn-primary';
+                mockBtn.className = 'btn btn-secondary';
+                
+                // 検索結果を非表示
+                document.getElementById('search-results').classList.add('hidden');
+                document.getElementById('no-search').classList.add('hidden');
+            } else {
+                streamlitContainer.style.display = 'none';
+                mockContainer.style.display = 'block';
+                embeddedBtn.className = 'btn btn-secondary';
+                mockBtn.className = 'btn btn-primary';
+                
+                // モックメッセージを表示
+                document.getElementById('search-results').classList.add('hidden');
+                document.getElementById('no-search').classList.remove('hidden');
+            }
+        }
+        
         // ボタンクリックイベントの追加
         document.addEventListener('click', function(e) {
             if (e.target.textContent.includes('詳細を見る')) {
@@ -937,5 +996,6 @@
             }
         });
     </script>
+    <script src="config.js"></script>
 </body>
 </html>
