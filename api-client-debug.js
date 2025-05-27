@@ -1,4 +1,4 @@
-// デバッグ強化版APIクライアント - 詳細な機能テスト付き
+// デバッグ強化版APIクライアント（UI改良版）
 class ResearcherSearchAPI {
     constructor() {
         this.baseURL = 'https://researcher-search-app-production.up.railway.app';
@@ -157,6 +157,26 @@ class ResearcherSearchAPI {
 
 // グローバルAPIクライアントインスタンス
 const apiClient = new ResearcherSearchAPI();
+
+// 検索方法変更時のUI制御
+function onSearchMethodChange() {
+    const searchMethod = document.getElementById('search-method').value;
+    const llmExpansionGroup = document.getElementById('llm-expansion-group');
+    const llmExpansionCheckbox = document.getElementById('llm-expansion');
+    
+    if (searchMethod === 'semantic') {
+        // セマンティック検索時はクエリ拡張を無効化
+        llmExpansionCheckbox.checked = false;
+        llmExpansionCheckbox.disabled = true;
+        llmExpansionGroup.style.opacity = '0.5';
+        llmExpansionGroup.title = 'セマンティック検索では利用できません';
+    } else {
+        // キーワード検索時はクエリ拡張を有効化
+        llmExpansionCheckbox.disabled = false;
+        llmExpansionGroup.style.opacity = '1';
+        llmExpansionGroup.title = '';
+    }
+}
 
 // 詳細診断実行関数
 async function performDetailedDiagnostic() {
@@ -407,7 +427,7 @@ async function testSpecificFeature(feature) {
     }
 }
 
-// API検索実行関数（既存のまま）
+// API検索実行関数
 async function performAPISearch() {
     const searchInput = document.getElementById('api-search-input');
     const searchQuery = searchInput.value.trim();
@@ -461,7 +481,7 @@ async function performAPISearch() {
     }
 }
 
-// API検索結果表示（既存関数を利用）
+// API検索結果表示
 function displayAPISearchResults(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');
     
@@ -522,7 +542,7 @@ function displayAPISearchResults(apiResponse) {
                 
                 ${researcher.llm_summary ? `
                     <div class="ai-summary">
-                        <strong>AI関連性分析:</strong> ${researcher.llm_summary}
+                        <strong>🤖 AI関連性分析:</strong> ${researcher.llm_summary}
                     </div>
                 ` : ''}
                 
@@ -570,7 +590,7 @@ async function checkAPIHealth() {
     }
 }
 
-// その他の関数（既存のまま）
+// その他の関数
 function toggleAPISearchMode(mode) {
     const apiContainer = document.getElementById('api-container');
     const mockContainer = document.getElementById('mock-container');
@@ -591,6 +611,9 @@ function toggleAPISearchMode(mode) {
         if (apiContainer) apiContainer.style.display = 'block';
         if (apiBtn) apiBtn.className = 'btn btn-primary';
         checkAPIHealth();
+        
+        // 検索方法変更の初期設定
+        onSearchMethodChange();
     } else if (mode === 'mock') {
         if (mockContainer) mockContainer.style.display = 'block';
         if (mockBtn) mockBtn.className = 'btn btn-primary';
@@ -610,5 +633,11 @@ function addToProjectCandidates(name) {
 
 document.addEventListener('DOMContentLoaded', function() {
     toggleAPISearchMode('api');
-    console.log('🚀 デバッグ強化版APIクライアント初期化完了');
+    console.log('🚀 UI改良版APIクライアント初期化完了');
+    
+    // 検索方法変更のイベントリスナー追加
+    const searchMethodSelect = document.getElementById('search-method');
+    if (searchMethodSelect) {
+        searchMethodSelect.addEventListener('change', onSearchMethodChange);
+    }
 });

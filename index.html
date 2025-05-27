@@ -361,13 +361,13 @@
                             
                             <div class="form-group">
                                 <label>検索方法</label>
-                                <select id="search-method" class="form-control">
+                                <select id="search-method" class="form-control" onchange="onSearchMethodChange()">
                                     <option value="semantic">セマンティック検索（推奨）</option>
                                     <option value="keyword">キーワード検索</option>
                                 </select>
                             </div>
                             
-                            <div class="checkbox-group">
+                            <div class="checkbox-group" id="llm-expansion-group">
                                 <input type="checkbox" id="llm-expansion">
                                 <label for="llm-expansion">🧠 AIによるキーワード拡張（キーワード検索時）</label>
                             </div>
