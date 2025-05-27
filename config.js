@@ -1,7 +1,7 @@
 // 環境変数から動的にStreamlitアプリのURLを取得
 const STREAMLIT_APP_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:8501' 
-    : 'https://researcher-search-app-production.up.railway.app';  // ← 実際のRailway URLに置き換え
+    : 'https://web-production-ce1a5.up.railway.app/';  // ← 実際のRailway URLに置き換え
 
 function updateStreamlitURL() {
     const iframe = document.querySelector('#streamlit-iframe');
