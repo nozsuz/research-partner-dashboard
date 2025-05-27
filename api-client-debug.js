@@ -171,6 +171,14 @@ class ResearcherSearchAPI {
 
             const data = await response.json();
             console.log('✅ API検索結果:', data);
+            
+            // デバッグ: expanded_info の確認
+            if (data.expanded_info) {
+                console.log('🧠 キーワード拡張情報:', data.expanded_info);
+            } else {
+                console.log('ℹ️ キーワード拡張なし (expanded_info が null または未定義)');
+            }
+            
             return data;
 
         } catch (error) {
@@ -541,7 +549,14 @@ function displayAPISearchResults(apiResponse) {
     }
     
     // キーワード拡張情報を表示
+    console.log('🔍 キーワード拡張情報チェック:', {
+        expanded_info: apiResponse.expanded_info,
+        method: apiResponse.method,
+        should_show: apiResponse.expanded_info && apiResponse.method === 'keyword'
+    });
+    
     if (apiResponse.expanded_info && apiResponse.method === 'keyword') {
+        console.log('✅ キーワード拡張情報を表示します');
         html += `
             <div class="alert alert-success" style="font-size: 0.9em; background-color: #e8f5e8; border-color: #c3e6cb;">
                 <strong>🧠 AIキーワード拡張:</strong><br>
@@ -549,6 +564,8 @@ function displayAPISearchResults(apiResponse) {
                 <span style="color: #666;">拡張後:</span> <code style="background-color: #fff3cd; padding: 2px 4px; border-radius: 3px;">${apiResponse.expanded_info.expanded_query}</code>
             </div>
         `;
+    } else {
+        console.log('❌ キーワード拡張情報は表示しません');
     }
 
     apiResponse.results.forEach((researcher, index) => {
