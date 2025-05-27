@@ -408,6 +408,13 @@ async function testSpecificFeature(feature) {
                 <p><strong>結果件数:</strong> ${result.total}件</p>
                 <p><strong>実行時間:</strong> ${result.execution_time.toFixed(2)}秒</p>
                 ${result.executed_query_info ? `<p><strong>実行情報:</strong> ${result.executed_query_info}</p>` : ''}
+                ${result.expanded_info ? `
+                    <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                        <strong>🧠 キーワード拡張:</strong><br>
+                        元: <code>${result.expanded_info.original_query}</code><br>
+                        拡張後: <code>${result.expanded_info.expanded_query}</code>
+                    </div>
+                ` : ''}
             </div>
         `;
         
@@ -520,6 +527,8 @@ function displayAPISearchResults(apiResponse) {
             「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
             ${apiResponse.total}件見つかりました。
             <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
+            ${apiResponse.expanded_info && apiResponse.method === 'keyword' ? 
+                `<br><small style="color: #28a745;">🧠 AIがキーワードを拡張して検索しました</small>` : ''}
         </div>
     `;
 
@@ -527,6 +536,17 @@ function displayAPISearchResults(apiResponse) {
         html += `
             <div class="alert alert-info" style="font-size: 0.9em;">
                 <strong>実行情報:</strong> ${apiResponse.executed_query_info}
+            </div>
+        `;
+    }
+    
+    // キーワード拡張情報を表示
+    if (apiResponse.expanded_info && apiResponse.method === 'keyword') {
+        html += `
+            <div class="alert alert-success" style="font-size: 0.9em; background-color: #e8f5e8; border-color: #c3e6cb;">
+                <strong>🧠 AIキーワード拡張:</strong><br>
+                <span style="color: #666;">元のキーワード:</span> <code>${apiResponse.expanded_info.original_query}</code><br>
+                <span style="color: #666;">拡張後:</span> <code style="background-color: #fff3cd; padding: 2px 4px; border-radius: 3px;">${apiResponse.expanded_info.expanded_query}</code>
             </div>
         `;
     }
