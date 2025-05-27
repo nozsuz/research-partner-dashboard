@@ -1,4 +1,4 @@
-// デバッグ強化版APIクライアント（UI改良版）
+// デバッグ強化版APIクライアント（LLMテスト機能付き）
 class ResearcherSearchAPI {
     constructor() {
         this.baseURL = 'https://researcher-search-app-production.up.railway.app';
@@ -53,6 +53,31 @@ class ResearcherSearchAPI {
             
         } catch (error) {
             console.error('❌ 環境変数テスト失敗:', error);
+            return { status: 'error', message: error.message };
+        }
+    }
+
+    // LLM機能テスト
+    async testLLMFunctions() {
+        try {
+            console.log('🔍 LLM機能テスト開始...');
+            
+            const response = await fetch(`${this.baseURL}/test/llm`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(30000)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📊 LLM機能テスト結果:', data);
+            return data;
+            
+        } catch (error) {
+            console.error('❌ LLM機能テスト失敗:', error);
             return { status: 'error', message: error.message };
         }
     }
@@ -195,23 +220,28 @@ async function performDetailedDiagnostic() {
         health: null,
         env: null,
         gcp: null,
+        llm: null,
         realSearch: null
     };
     
     // 1. ヘルスチェック
-    console.log('📊 1/4: ヘルスチェック');
+    console.log('📊 1/5: ヘルスチェック');
     diagnostics.health = await apiClient.healthCheck();
     
     // 2. 環境変数テスト
-    console.log('📊 2/4: 環境変数テスト');
+    console.log('📊 2/5: 環境変数テスト');
     diagnostics.env = await apiClient.testEnvironmentVariables();
     
     // 3. GCP機能テスト
-    console.log('📊 3/4: GCP機能テスト');
+    console.log('📊 3/5: GCP機能テスト');
     diagnostics.gcp = await apiClient.testGCPFeatures();
     
-    // 4. 実際の検索機能テスト
-    console.log('📊 4/4: 実際の検索機能テスト');
+    // 4. LLM機能テスト
+    console.log('📊 4/5: LLM機能テスト');
+    diagnostics.llm = await apiClient.testLLMFunctions();
+    
+    // 5. 実際の検索機能テスト
+    console.log('📊 5/5: 実際の検索機能テスト');
     diagnostics.realSearch = await apiClient.testRealSearch();
     
     // 結果を表示
@@ -234,34 +264,51 @@ function displayDetailedDiagnosticResults(diagnostics) {
     html += `
         <div class="diagnostic-section">
             <h5>${healthStatus} ヘルスチェック</h5>
-            <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; white-space: pre-wrap;">
+            <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
 ${JSON.stringify(diagnostics.health, null, 2)}
             </pre>
         </div>
     `;
     
-    // 2. 環境変数状況
+    // 2. LLM機能テスト結果
+    const llmStatus = (diagnostics.llm?.tests?.query_expansion?.expansion_worked && 
+                     diagnostics.llm?.tests?.summary_generation?.summary_generated) ? '🟢' : '🔴';
     html += `
         <div class="diagnostic-section">
-            <h5>⚙️ 環境変数設定状況</h5>
+            <h5>${llmStatus} LLM機能テスト</h5>
     `;
     
-    if (diagnostics.env?.basic_config) {
-        html += `<p><strong>基本設定:</strong></p><ul>`;
-        Object.entries(diagnostics.env.basic_config).forEach(([key, value]) => {
-            const status = value !== 'Not Set' ? '✅' : '❌';
-            html += `<li>${status} ${key}: ${value}</li>`;
-        });
-        html += `</ul>`;
-    }
-    
-    if (diagnostics.env?.gcp_credentials) {
-        html += `<p><strong>GCP認証情報:</strong></p><ul>`;
-        Object.entries(diagnostics.env.gcp_credentials).forEach(([key, value]) => {
-            const status = value === 'Set' ? '✅' : '❌';
-            html += `<li>${status} ${key}: ${value}</li>`;
-        });
-        html += `</ul>`;
+    if (diagnostics.llm?.tests) {
+        // クエリ拡張テスト
+        const expansionTest = diagnostics.llm.tests.query_expansion;
+        if (expansionTest) {
+            const expansionStatus = expansionTest.expansion_worked ? '✅' : '❌';
+            html += `
+                <p><strong>${expansionStatus} クエリ拡張:</strong></p>
+                <ul>
+                    <li>ステータス: ${expansionTest.status}</li>
+                    <li>元のクエリ: ${expansionTest.original_query || 'N/A'}</li>
+                    <li>拡張後: ${expansionTest.expanded_query || 'N/A'}</li>
+                    <li>拡張動作: ${expansionTest.expansion_worked ? 'はい' : 'いいえ'}</li>
+                    ${expansionTest.error ? `<li>エラー: ${expansionTest.error}</li>` : ''}
+                </ul>
+            `;
+        }
+        
+        // 要約生成テスト  
+        const summaryTest = diagnostics.llm.tests.summary_generation;
+        if (summaryTest) {
+            const summaryStatus = summaryTest.summary_generated ? '✅' : '❌';
+            html += `
+                <p><strong>${summaryStatus} 要約生成:</strong></p>
+                <ul>
+                    <li>ステータス: ${summaryTest.status}</li>
+                    <li>要約生成: ${summaryTest.summary_generated ? 'はい' : 'いいえ'}</li>
+                    <li>要約テキスト: ${summaryTest.summary_text || 'N/A'}</li>
+                    ${summaryTest.error ? `<li>エラー: ${summaryTest.error}</li>` : ''}
+                </ul>
+            `;
+        }
     }
     
     html += `</div>`;
@@ -290,37 +337,6 @@ ${JSON.stringify(diagnostics.health, null, 2)}
     
     html += `</div>`;
     
-    // 4. 実際の検索機能テスト結果
-    const searchStatus = diagnostics.realSearch?.test_status === 'success' ? '🟢' : '🔴';
-    html += `
-        <div class="diagnostic-section">
-            <h5>${searchStatus} 実際の検索機能</h5>
-            <p><strong>ステータス:</strong> ${diagnostics.realSearch?.test_status || 'error'}</p>
-            <p><strong>メッセージ:</strong> ${diagnostics.realSearch?.message || 'N/A'}</p>
-    `;
-    
-    if (diagnostics.realSearch?.result_summary) {
-        html += `
-            <p><strong>検索結果概要:</strong></p>
-            <ul>
-                <li>ステータス: ${diagnostics.realSearch.result_summary.status}</li>
-                <li>結果件数: ${diagnostics.realSearch.result_summary.total_results}件</li>
-                <li>実行時間: ${diagnostics.realSearch.result_summary.execution_time}秒</li>
-                <li>方法: ${diagnostics.realSearch.result_summary.method}</li>
-            </ul>
-        `;
-    }
-    
-    if (diagnostics.realSearch?.error_details) {
-        html += `
-            <div style="background: #f8d7da; padding: 10px; border-radius: 4px; margin-top: 10px;">
-                <strong>エラー詳細:</strong> ${diagnostics.realSearch.error_details}
-            </div>
-        `;
-    }
-    
-    html += `</div>`;
-    
     // 推奨事項
     html += `
         <div class="alert alert-warning">
@@ -328,20 +344,16 @@ ${JSON.stringify(diagnostics.health, null, 2)}
             <ul>
     `;
     
-    if (diagnostics.env?.gcp_credentials && Object.values(diagnostics.env.gcp_credentials).includes('Not Set')) {
-        html += `<li>❗ GCP認証情報の設定が不完全です。Railway管理画面で環境変数を確認してください。</li>`;
+    if (!diagnostics.llm?.tests?.query_expansion?.expansion_worked) {
+        html += `<li>❗ LLMクエリ拡張が動作していません。Gemini 2.0モデルの設定を確認してください。</li>`;
+    }
+    
+    if (!diagnostics.llm?.tests?.summary_generation?.summary_generated) {
+        html += `<li>❗ LLM要約生成が動作していません。Vertex AI設定を確認してください。</li>`;
     }
     
     if (!diagnostics.gcp?.tests?.vertex_ai?.status?.includes('成功')) {
-        html += `<li>❗ Vertex AIが利用できません。セマンティック検索とLLM機能は使用できません。</li>`;
-    }
-    
-    if (!diagnostics.gcp?.tests?.bigquery?.status?.includes('成功')) {
-        html += `<li>❗ BigQueryに接続できません。データ検索ができません。</li>`;
-    }
-    
-    if (diagnostics.realSearch?.test_status !== 'success') {
-        html += `<li>❗ 実際の検索機能が動作しません。現在はモック検索のみ利用可能です。</li>`;
+        html += `<li>❗ Vertex AIが利用できません。認証設定を確認してください。</li>`;
     }
     
     html += `
@@ -407,7 +419,7 @@ async function testSpecificFeature(feature) {
                     <h6>${sample.name_ja || sample.name_en || '名前不明'}</h6>
                     <p><strong>所属:</strong> ${sample.main_affiliation_name_ja || '不明'}</p>
                     <p><strong>キーワード:</strong> ${sample.research_keywords_ja || '不明'}</p>
-                    ${sample.llm_summary ? `<div class="ai-summary">AI要約: ${sample.llm_summary}</div>` : ''}
+                    ${sample.llm_summary ? `<div class="ai-summary">🤖 AI要約: ${sample.llm_summary}</div>` : ''}
                     ${sample.distance !== null ? `<p>距離スコア: ${sample.distance.toFixed(4)}</p>` : ''}
                     ${sample.relevance_score !== null ? `<p>関連度: ${sample.relevance_score}</p>` : ''}
                 </div>
@@ -633,7 +645,7 @@ function addToProjectCandidates(name) {
 
 document.addEventListener('DOMContentLoaded', function() {
     toggleAPISearchMode('api');
-    console.log('🚀 UI改良版APIクライアント初期化完了');
+    console.log('🚀 LLMテスト対応APIクライアント初期化完了');
     
     // 検索方法変更のイベントリスナー追加
     const searchMethodSelect = document.getElementById('search-method');
