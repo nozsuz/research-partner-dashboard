@@ -1,18 +1,20 @@
 {
   "name": "research-partner-dashboard",
-  "version": "1.0.0",
-  "description": "研究者検索・プロジェクト管理・契約サポート・資金調達支援を提供するダッシュボードのモックアップです。",
-  "main": "api-client-debug.js",
+  "version": "2.0.0",
+  "description": "AI研究者検索・マッチングダッシュボード",
+  "main": "index.html",
   "scripts": {
+    "build": "echo 'Static build complete'",
+    "start": "echo 'Static site ready'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nozsuz/research-partner-dashboard.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["research", "ai", "dashboard", "vercel"],
+  "author": "Research Team",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/nozsuz/research-partner-dashboard/issues"
