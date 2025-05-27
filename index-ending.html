@@ -1,0 +1,14 @@
+        // ボタンクリックイベントの追加
+        document.addEventListener('click', function(e) {
+            if (e.target.textContent.includes('詳細を見る')) {
+                alert('研究者の詳細ページへ遷移します（モック機能）');
+            }
+            if (e.target.textContent.includes('プロジェクト候補に追加')) {
+                alert('研究者をプロジェクト候補に追加しました。');
+            }
+        });
+    </script>
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+</body>
+</html>
