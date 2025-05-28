@@ -431,85 +431,53 @@
                 </div>
 
                 <div class="search-section">
+                    <!-- APIステータス表示 -->
+                    <div id="api-status" class="alert alert-info" style="display: none;"></div>
+                    
                     <div class="search-options">
                         <h3 style="margin-bottom: 15px;">詳細検索オプション</h3>
                         
                         <div class="form-group">
                             <label>検索方法</label>
-                            <select class="form-control">
-                                <option>セマンティック検索（推奨）</option>
-                                <option>キーワード検索</option>
+                            <select class="form-control" id="search-method">
+                                <option value="semantic">セマンティック検索（推奨）</option>
+                                <option value="keyword">キーワード検索</option>
                             </select>
                         </div>
                         
                         <div class="checkbox-group">
-                            <input type="checkbox" id="llm-expansion" checked>
+                            <input type="checkbox" id="llm-expansion">
                             <label for="llm-expansion">🧠 AIによるキーワード拡張</label>
                         </div>
                         
                         <div class="checkbox-group">
-                            <input type="checkbox" id="llm-summary" checked>
+                            <input type="checkbox" id="llm-summary">
                             <label for="llm-summary">⚡ AIによる関連性要約表示</label>
                         </div>
                         
                         <div class="form-group">
-                            <label>最大表示件数: 3</label>
-                            <input type="range" min="1" max="10" value="3" class="form-control">
+                            <label>最大表示件数: <span id="max-results-display">5</span></label>
+                            <input type="range" id="max-results" min="1" max="20" value="5" class="form-control" oninput="document.getElementById('max-results-display').textContent = this.value">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <input type="text" class="form-control" id="search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
+                        <input type="text" class="form-control" id="api-search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="searchResearchers()" style="width: 100%;">
-                        研究者を検索
+                    <button class="btn btn-primary" onclick="performAPISearch()" style="width: 100%;">
+                        🚀 研究者を検索
                     </button>
                 </div>
-
-                <div id="search-results" class="hidden">
-                    <div class="alert alert-success">
-                        「人工知能」の検索結果: 5件見つかりました。
-                    </div>
-
-                    <div class="researcher-card">
-                        <div class="researcher-name">研究者A (関連: 人工知能)</div>
-                        <div class="researcher-info"><span class="info-label">所属:</span> 最先端大学</div>
-                        <div class="researcher-info"><span class="info-label">専門キーワード:</span> AI, 機械学習, ディープラーニング</div>
-                        
-                        <div class="ai-summary">
-                            <strong>AIによる関連性要約:</strong> この研究者は「人工知能」の分野において、特に「AI」に関する深い知見を有しています。プロフィールには「AI分野の世界的権威。特に画像認識と自動運転技術...」といった記述があり、貴社の課題解決に貢献できる可能性が高いです。
-                        </div>
-                        
-                        <div class="score-badge">AI関連度スコア: 0.95</div>
-                        
-                        <div class="button-group">
-                            <button class="btn btn-secondary">詳細を見る</button>
-                            <button class="btn btn-primary">プロジェクト候補に追加</button>
-                        </div>
-                    </div>
-
-                    <div class="researcher-card">
-                        <div class="researcher-name">研究者D (関連: 人工知能)</div>
-                        <div class="researcher-info"><span class="info-label">所属:</span> 最先端大学</div>
-                        <div class="researcher-info"><span class="info-label">専門キーワード:</span> AI, 自然言語処理, 対話システム</div>
-                        
-                        <div class="ai-summary">
-                            <strong>AIによる関連性要約:</strong> この研究者は「人工知能」の分野において、特に「AI」に関する深い知見を有しています。プロフィールには「人間と自然に対話できるAIアシスタント...」といった記述があり、貴社の課題解決に貢献できる可能性が高いです。
-                        </div>
-                        
-                        <div class="score-badge">AI関連度スコア: 0.85</div>
-                        
-                        <div class="button-group">
-                            <button class="btn btn-secondary">詳細を見る</button>
-                            <button class="btn btn-primary">プロジェクト候補に追加</button>
-                        </div>
+                
+                <!-- API検索結果表示エリア -->
+                <div id="api-search-results" style="margin-top: 20px;">
+                    <div class="alert alert-info">
+                        キーワードを入力して「研究者を検索」ボタンを押してください。
                     </div>
                 </div>
 
-                <div id="no-search" class="alert alert-info">
-                    キーワードを入力して「研究者を検索」ボタンを押してください。
-                </div>
+
             </div>
 
             <!-- マイプロジェクトページ -->
@@ -854,7 +822,257 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
+        // APIクライアントクラス
+        class ResearcherSearchAPI {
+            constructor() {
+                // 環境に応じてAPIのベースURLを設定
+                this.baseURL = API_CONFIG.baseURL || 'http://localhost:8000';  // config.jsから取得
+                console.log('API Base URL:', this.baseURL);
+            }
+
+            // ヘルスチェック
+            async healthCheck() {
+                try {
+                    const response = await fetch(`${this.baseURL}/health`, {
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    return data;
+                    
+                } catch (error) {
+                    console.error('ヘルスチェック失敗:', error);
+                    return { 
+                        status: 'error', 
+                        message: error.message
+                    };
+                }
+            }
+
+            // 研究者検索
+            async searchResearchers(searchParams) {
+                try {
+                    const {
+                        query,
+                        method = 'semantic',
+                        maxResults = 5,
+                        useLLMExpansion = false,
+                        useLLMSummary = false
+                    } = searchParams;
+
+                    const response = await fetch(`${this.baseURL}/api/search`, {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            method: method,
+                            max_results: maxResults,
+                            use_llm_expansion: useLLMExpansion,
+                            use_llm_summary: useLLMSummary
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data;
+
+                } catch (error) {
+                    console.error('API検索エラー:', error);
+                    throw error;
+                }
+            }
+        }
+
+        // グローバルAPIクライアントインスタンス
+        const apiClient = new ResearcherSearchAPI();
+
+        // API検索結果の表示関数
+        function displayAPISearchResults(apiResponse) {
+            const resultsContainer = document.getElementById('api-search-results');
+            
+            if (!apiResponse || apiResponse.status !== 'success') {
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        API検索でエラーが発生しました: ${apiResponse?.detail || '不明なエラー'}
+                    </div>
+                `;
+                return;
+            }
+
+            if (!apiResponse.results || apiResponse.results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        「${apiResponse.query}」に該当する研究者は見つかりませんでした。
+                    </div>
+                `;
+                return;
+            }
+
+            // 成功メッセージ
+            let html = `
+                <div class="alert alert-success">
+                    「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
+                    ${apiResponse.total}件見つかりました。
+                    <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
+                </div>
+            `;
+
+            // 研究者カードの生成
+            apiResponse.results.forEach((researcher) => {
+                const name = researcher.name_ja || researcher.name_en || '名前不明';
+                const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+                const keywords = researcher.research_keywords_ja || 'N/A';
+                const fields = researcher.research_fields_ja || 'N/A';
+                const profile = researcher.profile_ja || 'N/A';
+                const researchmapUrl = researcher.researchmap_url || '#';
+
+                // スコア表示
+                let scoreText = '';
+                if (apiResponse.method === 'keyword' && researcher.relevance_score !== null) {
+                    scoreText = ` (関連度: ${researcher.relevance_score})`;
+                } else if (apiResponse.method === 'semantic' && researcher.distance !== null) {
+                    scoreText = ` (距離: ${researcher.distance.toFixed(4)})`;
+                }
+
+                html += `
+                    <div class="researcher-card">
+                        <div class="researcher-name">${name} (${affiliation})${scoreText}</div>
+                        
+                        ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
+                        ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
+                        ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                        
+                        ${researcher.llm_summary ? `
+                            <div class="ai-summary">
+                                <strong>AI関連性分析:</strong> ${researcher.llm_summary}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="button-group">
+                            <button class="btn btn-secondary" onclick="showResearcherDetail('${name}')">詳細を見る</button>
+                            <button class="btn btn-primary" onclick="addToProjectCandidates('${name}')">プロジェクト候補に追加</button>
+                            ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
+        }
+
+        // 実際のAPI検索関数
+        async function performAPISearch() {
+            const searchInput = document.getElementById('api-search-input');
+            const searchQuery = searchInput.value.trim();
+            
+            if (!searchQuery) {
+                alert('検索キーワードを入力してください。');
+                return;
+            }
+
+            // 検索オプションの取得
+            const searchMethod = document.getElementById('search-method').value;
+            const maxResults = parseInt(document.getElementById('max-results').value);
+            const useLLMExpansion = document.getElementById('llm-expansion').checked;
+            const useLLMSummary = document.getElementById('llm-summary').checked;
+
+            // 結果エリアをクリア
+            const resultsContainer = document.getElementById('api-search-results');
+            
+            // ローディング表示
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    API検索を実行中...
+                </div>
+            `;
+
+            try {
+                // API検索実行
+                const searchParams = {
+                    query: searchQuery,
+                    method: searchMethod,
+                    maxResults: maxResults,
+                    useLLMExpansion: useLLMExpansion,
+                    useLLMSummary: useLLMSummary
+                };
+
+                const apiResponse = await apiClient.searchResearchers(searchParams);
+                
+                // 結果表示
+                displayAPISearchResults(apiResponse);
+
+            } catch (error) {
+                console.error('API検索エラー:', error);
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h4>🔴 API検索でエラーが発生しました</h4>
+                        <p><strong>エラー内容:</strong> ${error.message}</p>
+                        <hr>
+                        <p>バックエンドサーバーが起動しているか確認してください。</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ヘルスチェック関数
+        async function checkAPIHealth() {
+            try {
+                const statusElement = document.getElementById('api-status');
+                if (statusElement) {
+                    statusElement.style.display = 'block';
+                    statusElement.innerHTML = '🔄 API接続確認中...';
+                    statusElement.className = 'alert alert-info';
+                }
+                
+                const healthCheck = await apiClient.healthCheck();
+                
+                if (statusElement) {
+                    if (healthCheck.status === 'healthy') {
+                        statusElement.innerHTML = '🟢 API接続正常 - サーバー稼働中';
+                        statusElement.className = 'alert alert-success';
+                    } else {
+                        statusElement.innerHTML = `🔴 API接続失敗 - ${healthCheck.message}`;
+                        statusElement.className = 'alert alert-warning';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('API Health Check Error:', error);
+                const statusElement = document.getElementById('api-status');
+                if (statusElement) {
+                    statusElement.innerHTML = `🔴 API接続エラー - ${error.message}`;
+                    statusElement.className = 'alert alert-warning';
+                }
+            }
+        }
+
+        // 研究者詳細表示
+        function showResearcherDetail(name) {
+            alert(`${name}の詳細ページへ遷移します（実装予定）`);
+        }
+
+        // プロジェクト候補追加
+        function addToProjectCandidates(name) {
+            alert(`${name}をプロジェクト候補に追加しました。`);
+        }
+
         function showPage(page) {
             // すべてのページを非表示
             const pages = document.querySelectorAll('.page');
@@ -867,6 +1085,11 @@
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(item => item.classList.remove('active'));
             event.target.classList.add('active');
+            
+            // 研究者検索ページの場合はAPIヘルスチェックを実行
+            if (page === 'researchers') {
+                checkAPIHealth();
+            }
         }
 
         function showTab(section, tab) {
@@ -883,43 +1106,12 @@
             event.target.classList.add('active');
         }
 
-        function searchResearchers() {
-            const searchInput = document.getElementById('search-input');
-            const searchValue = searchInput.value.trim();
-            
-            if (searchValue) {
-                // ローディング表示
-                document.getElementById('no-search').classList.add('hidden');
-                document.getElementById('search-results').classList.add('hidden');
-                
-                const loadingDiv = document.createElement('div');
-                loadingDiv.id = 'loading';
-                loadingDiv.className = 'loading';
-                loadingDiv.innerHTML = '<div class="spinner"></div>検索中...';
-                document.querySelector('#researchers-page').appendChild(loadingDiv);
-                
-                // 2秒後に結果を表示
-                setTimeout(() => {
-                    document.getElementById('loading').remove();
-                    document.getElementById('search-results').classList.remove('hidden');
-                }, 2000);
-            } else {
-                alert('検索キーワードを入力してください。');
-            }
-        }
-
         function showLogoutMessage() {
             alert('ログアウトしました。');
         }
 
         // ボタンクリックイベントの追加
         document.addEventListener('click', function(e) {
-            if (e.target.textContent.includes('詳細を見る')) {
-                alert('研究者の詳細ページへ遷移します（モック機能）');
-            }
-            if (e.target.textContent.includes('プロジェクト候補に追加')) {
-                alert('研究者をプロジェクト候補に追加しました。');
-            }
             if (e.target.textContent.includes('プロジェクト詳細・進捗管理へ')) {
                 alert('プロジェクト詳細・進捗管理ページへ遷移します（モック機能）');
             }
@@ -935,6 +1127,12 @@
             if (e.target.textContent.includes('更新する') || e.target.textContent.includes('保存する') || e.target.textContent.includes('変更する')) {
                 alert('設定を保存しました（モック機能）');
             }
+        });
+        
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 研究者検索ページでAPIヘルスチェックを実行
+            checkAPIHealth();
         });
     </script>
 </body>
