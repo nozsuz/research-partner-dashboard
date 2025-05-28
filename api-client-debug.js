@@ -297,6 +297,7 @@ ${JSON.stringify(diagnostics.health, null, 2)}
                     <li>ステータス: ${expansionTest.status}</li>
                     <li>元のクエリ: ${expansionTest.original_query || 'N/A'}</li>
                     <li>拡張後: ${expansionTest.expanded_query || 'N/A'}</li>
+                    ${expansionTest.expanded_keywords ? `<li>拡張キーワード: ${expansionTest.expanded_keywords.join(', ')}</li>` : ''}
                     <li>拡張動作: ${expansionTest.expansion_worked ? 'はい' : 'いいえ'}</li>
                     ${expansionTest.error ? `<li>エラー: ${expansionTest.error}</li>` : ''}
                 </ul>
@@ -420,7 +421,9 @@ async function testSpecificFeature(feature) {
                     <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-top: 10px;">
                         <strong>🧠 キーワード拡張:</strong><br>
                         元: <code>${result.expanded_info.original_query}</code><br>
-                        拡張後: <code>${result.expanded_info.expanded_query}</code>
+                        拡張後: <code>${result.expanded_info.expanded_query}</code><br>
+                        ${result.expanded_info.expanded_keywords ? 
+                            `拡張キーワード一覧: <em>${result.expanded_info.expanded_keywords.join(', ')}</em>` : ''}
                     </div>
                 ` : ''}
             </div>
@@ -557,11 +560,24 @@ function displayAPISearchResults(apiResponse) {
     
     if (apiResponse.expanded_info && apiResponse.method === 'keyword') {
         console.log('✅ キーワード拡張情報を表示します');
+        const expandedKeywords = apiResponse.expanded_info.expanded_keywords || [];
+        const keywordsList = expandedKeywords.map((kw, idx) => {
+            // 元のキーワードは太字で表示
+            if (kw === apiResponse.expanded_info.original_query) {
+                return `<span style="font-weight: bold; color: #28a745;">${kw}</span>`;
+            }
+            return `<span style="color: #495057;">${kw}</span>`;
+        }).join(', ');
+        
         html += `
             <div class="alert alert-success" style="font-size: 0.9em; background-color: #e8f5e8; border-color: #c3e6cb;">
-                <strong>🧠 AIキーワード拡張:</strong><br>
-                <span style="color: #666;">元のキーワード:</span> <code>${apiResponse.expanded_info.original_query}</code><br>
-                <span style="color: #666;">拡張後:</span> <code style="background-color: #fff3cd; padding: 2px 4px; border-radius: 3px;">${apiResponse.expanded_info.expanded_query}</code>
+                <strong>🧠 AIによるキーワード拡張:</strong><br>
+                <span style="color: #666;">元のキーワード:</span> <code style="font-weight: bold;">${apiResponse.expanded_info.original_query}</code><br>
+                <span style="color: #666;">拡張されたキーワード (${expandedKeywords.length}個):</span><br>
+                <div style="margin-top: 5px; padding: 10px; background-color: #fff; border-radius: 4px; border: 1px solid #d4edda;">
+                    ${keywordsList}
+                </div>
+                <small style="color: #666; margin-top: 5px; display: block;">※ 太字は元のキーワード、その他はAIが提案した関連キーワードです</small>
             </div>
         `;
     } else {
