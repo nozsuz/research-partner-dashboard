@@ -223,6 +223,24 @@
             border-left: 4px solid #667eea;
         }
         
+        .expanded-keywords {
+            background: #f0f4ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .keyword-tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            margin: 2px;
+            font-size: 0.85em;
+        }
+        
         .button-group {
             display: flex;
             gap: 10px;
@@ -901,6 +919,26 @@
 
         // グローバルAPIクライアントインスタンス
         const apiClient = new ResearcherSearchAPI();
+        
+        // 検索方法変更時の処理
+        function onSearchMethodChange() {
+            const searchMethod = document.getElementById('search-method').value;
+            const llmExpansionCheckbox = document.getElementById('llm-expansion');
+            const llmExpansionLabel = llmExpansionCheckbox.parentElement.querySelector('label');
+            
+            if (searchMethod === 'semantic') {
+                // セマンティック検索の場合はキーワード拡張を無効化
+                llmExpansionCheckbox.disabled = true;
+                llmExpansionCheckbox.checked = false;
+                llmExpansionLabel.style.opacity = '0.5';
+                llmExpansionLabel.title = 'セマンティック検索時は使用できません';
+            } else {
+                // キーワード検索の場合は有効化
+                llmExpansionCheckbox.disabled = false;
+                llmExpansionLabel.style.opacity = '1';
+                llmExpansionLabel.title = '';
+            }
+        }
 
         // API検索結果の表示関数
         function displayAPISearchResults(apiResponse) {
@@ -932,6 +970,19 @@
                     <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
                 </div>
             `;
+            
+            // キーワード拡張情報の表示
+            if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
+                const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
+                html += `
+                    <div class="expanded-keywords">
+                        <strong>🧠 AIによるキーワード拡張:</strong><br>
+                        <div style="margin-top: 8px;">
+                            ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
 
             // 研究者カードの生成
             apiResponse.results.forEach((researcher) => {
@@ -940,6 +991,8 @@
                 const keywords = researcher.research_keywords_ja || 'N/A';
                 const fields = researcher.research_fields_ja || 'N/A';
                 const profile = researcher.profile_ja || 'N/A';
+                const paper = researcher.paper_title_ja_first || 'N/A';
+                const project = researcher.project_title_ja_first || 'N/A';
                 const researchmapUrl = researcher.researchmap_url || '#';
 
                 // スコア表示
@@ -957,6 +1010,8 @@
                         ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
                         ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
                         ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                        ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+                        ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
                         
                         ${researcher.llm_summary ? `
                             <div class="ai-summary">
@@ -1133,6 +1188,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 研究者検索ページでAPIヘルスチェックを実行
             checkAPIHealth();
+            
+            // 検索方法変更時のイベントリスナー追加
+            const searchMethodSelect = document.getElementById('search-method');
+            if (searchMethodSelect) {
+                searchMethodSelect.addEventListener('change', onSearchMethodChange);
+                // 初期状態を設定
+                onSearchMethodChange();
+            }
         });
     </script>
 </body>
