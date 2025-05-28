@@ -440,6 +440,8 @@ async function testSpecificFeature(feature) {
                     }</h6>
                     <p><strong>所属:</strong> ${sample.main_affiliation_name_ja || '不明'}</p>
                     <p><strong>キーワード:</strong> ${sample.research_keywords_ja || '不明'}</p>
+                    ${sample.paper_title_ja_first ? `<p><strong>主要論文:</strong> ${sample.paper_title_ja_first}</p>` : ''}
+                    ${sample.project_title_ja_first ? `<p><strong>主要プロジェクト:</strong> ${sample.project_title_ja_first}</p>` : ''}
                     ${sample.llm_summary ? `<div class="ai-summary">🤖 AI要約: ${sample.llm_summary}</div>` : ''}
                     ${sample.distance !== null ? `<p>距離スコア: ${sample.distance.toFixed(4)}</p>` : ''}
                     ${sample.relevance_score !== null ? `<p>関連度: ${sample.relevance_score}</p>` : ''}
@@ -597,6 +599,8 @@ function displayAPISearchResults(apiResponse) {
         const keywords = researcher.research_keywords_ja || 'N/A';
         const fields = researcher.research_fields_ja || 'N/A';
         const profile = researcher.profile_ja || 'N/A';
+        const paper = researcher.paper_title_ja_first || 'N/A';
+        const project = researcher.project_title_ja_first || 'N/A';
         const researchmapUrl = researcher.researchmap_url || '#';
 
         let scoreText = '';
@@ -617,6 +621,8 @@ function displayAPISearchResults(apiResponse) {
                 <div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>
                 <div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>
                 <div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>
+                ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+                ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
                 
                 ${researcher.llm_summary ? `
                     <div class="ai-summary">
