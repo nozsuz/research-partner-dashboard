@@ -434,12 +434,19 @@ async function testSpecificFeature(feature) {
             const sample = result.results[0];
             html += `
                 <div class="researcher-card" style="margin-top: 15px;">
-                    <h6>${sample.name_ja || sample.name_en || '名前不明'}</h6>
+                    <h6>${sample.researchmap_url && sample.researchmap_url !== '#' ? 
+                        `<a href="${sample.researchmap_url}" target="_blank" style="color: #2c3e50;">${sample.name_ja || sample.name_en || '名前不明'}</a>` : 
+                        sample.name_ja || sample.name_en || '名前不明'
+                    }</h6>
                     <p><strong>所属:</strong> ${sample.main_affiliation_name_ja || '不明'}</p>
                     <p><strong>キーワード:</strong> ${sample.research_keywords_ja || '不明'}</p>
                     ${sample.llm_summary ? `<div class="ai-summary">🤖 AI要約: ${sample.llm_summary}</div>` : ''}
                     ${sample.distance !== null ? `<p>距離スコア: ${sample.distance.toFixed(4)}</p>` : ''}
                     ${sample.relevance_score !== null ? `<p>関連度: ${sample.relevance_score}</p>` : ''}
+                    ${sample.researchmap_url && sample.researchmap_url !== '#' ? 
+                        `<p><a href="${sample.researchmap_url}" target="_blank" class="btn btn-sm btn-secondary">🌐 researchmap</a></p>` : 
+                        ''
+                    }
                 </div>
             `;
         }
@@ -590,6 +597,7 @@ function displayAPISearchResults(apiResponse) {
         const keywords = researcher.research_keywords_ja || 'N/A';
         const fields = researcher.research_fields_ja || 'N/A';
         const profile = researcher.profile_ja || 'N/A';
+        const researchmapUrl = researcher.researchmap_url || '#';
 
         let scoreText = '';
         if (apiResponse.method === 'keyword' && researcher.relevance_score !== null) {
@@ -600,7 +608,12 @@ function displayAPISearchResults(apiResponse) {
 
         html += `
             <div class="researcher-card">
-                <div class="researcher-name">${name} (${affiliation})${scoreText}</div>
+                <div class="researcher-name">
+                    ${researchmapUrl && researchmapUrl !== '#' ? 
+                        `<a href="${researchmapUrl}" target="_blank" style="color: #2c3e50; text-decoration: none;">${name}</a>` : 
+                        name
+                    } (${affiliation})${scoreText}
+                </div>
                 <div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>
                 <div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>
                 <div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>
@@ -612,7 +625,10 @@ function displayAPISearchResults(apiResponse) {
                 ` : ''}
                 
                 <div class="button-group">
-                    <button class="btn btn-secondary" onclick="showResearcherDetail('${name}')">詳細を見る</button>
+                    ${researchmapUrl && researchmapUrl !== '#' ? 
+                        `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">🌐 researchmapで詳細を見る</a>` : 
+                        ''
+                    }
                     <button class="btn btn-primary" onclick="addToProjectCandidates('${name}')">プロジェクト候補に追加</button>
                 </div>
             </div>
