@@ -473,6 +473,11 @@
                             <label for="llm-summary">⚡ AIによる関連性要約表示</label>
                         </div>
                         
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="internal-evaluation">
+                            <label for="internal-evaluation">🎯 内部評価モード（7つの観点で総合評価）</label>
+                        </div>
+                        
                         <div class="form-group">
                             <label>最大表示件数: <span id="max-results-display">5</span></label>
                             <input type="range" id="max-results" min="1" max="20" value="5" class="form-control" oninput="document.getElementById('max-results-display').textContent = this.value">
@@ -885,7 +890,8 @@
                         method = 'semantic',
                         maxResults = 5,
                         useLLMExpansion = false,
-                        useLLMSummary = false
+                        useLLMSummary = false,
+                        useInternalEvaluation = false
                     } = searchParams;
 
                     const response = await fetch(`${this.baseURL}/api/search`, {
@@ -899,7 +905,8 @@
                             method: method,
                             max_results: maxResults,
                             use_llm_expansion: useLLMExpansion,
-                            use_llm_summary: useLLMSummary
+                            use_llm_summary: useLLMSummary,
+                            use_internal_evaluation: useInternalEvaluation
                         })
                     });
 
@@ -940,6 +947,85 @@
             }
         }
 
+        // 内部評価モードの結果表示関数
+        function displayInternalEvaluationResults(apiResponse) {
+            const resultsContainer = document.getElementById('api-search-results');
+            
+            // サマリー表示
+            let html = `
+                <div class="alert alert-success">
+                    <h4>🎯 内部評価モード検索結果</h4>
+                    <p><strong>ベストマッチ:</strong> ${apiResponse.summary?.best_match || '該当なし'}</p>
+                    <p><strong>評価サマリー:</strong> ${apiResponse.summary?.key_finding || ''}</p>
+                    <p><small>評価完了: ${apiResponse.total}名 | 表示: ${apiResponse.displayed}件 | 実行時間: ${apiResponse.execution_time.toFixed(2)}秒</small></p>
+                </div>
+            `;
+            
+            // キーワード拡張情報の表示
+            if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
+                const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
+                html += `
+                    <div class="expanded-keywords">
+                        <strong>🧠 AIによるキーワード拡張:</strong><br>
+                        <div style="margin-top: 8px;">
+                            ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 評価結果の表示
+            if (apiResponse.evaluated_results && apiResponse.evaluated_results.length > 0) {
+                apiResponse.evaluated_results.forEach((result) => {
+                    html += `
+                        <div class="researcher-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <div class="researcher-name">第${result.rank}位: ${result.name}</div>
+                                <div class="score-badge">総合スコア: ${result.score}/10</div>
+                            </div>
+                            
+                            <div class="researcher-info"><span class="info-label">所属:</span> ${result.affiliation}</div>
+                            <div class="researcher-info"><span class="info-label">研究キーワード:</span> ${result.keywords}</div>
+                            
+                            <div class="ai-summary">
+                                <strong>評価サマリー:</strong> ${result.summary}
+                            </div>
+                            
+                            ${result.strengths && result.strengths.length > 0 ? `
+                                <div class="researcher-info" style="margin-top: 10px;">
+                                    <span class="info-label">強み:</span>
+                                    ${result.strengths.map(strength => `<span class="keyword-tag" style="background: #4caf50;">${strength}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${result.detail_scores ? `
+                                <details style="margin-top: 10px;">
+                                    <summary style="cursor: pointer; font-weight: 600;">詳細スコアを表示</summary>
+                                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                        <div>キーワード一致度: ${result.detail_scores.keyword_match || 'N/A'}/10</div>
+                                        <div>研究の直接性: ${result.detail_scores.research_directness || 'N/A'}/10</div>
+                                        <div>専門性の深さ: ${result.detail_scores.expertise_depth || 'N/A'}/10</div>
+                                        <div>具体的実績: ${result.detail_scores.practical_evidence || 'N/A'}/10</div>
+                                        <div>研究の質: ${result.detail_scores.research_quality || 'N/A'}/10</div>
+                                        <div>学際性: ${result.detail_scores.interdisciplinary || 'N/A'}/10</div>
+                                        <div>最新性: ${result.detail_scores.recency || 'N/A'}/10</div>
+                                    </div>
+                                </details>
+                            ` : ''}
+                            
+                            <div class="button-group">
+                                <button class="btn btn-secondary" onclick="showResearcherDetail('${result.name}')">詳細を見る</button>
+                                <button class="btn btn-primary" onclick="addToProjectCandidates('${result.name}')">プロジェクト候補に追加</button>
+                                ${result.url ? `<a href="${result.url}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            resultsContainer.innerHTML = html;
+        }
+        
         // API検索結果の表示関数
         function displayAPISearchResults(apiResponse) {
             const resultsContainer = document.getElementById('api-search-results');
@@ -950,6 +1036,12 @@
                         API検索でエラーが発生しました: ${apiResponse?.detail || '不明なエラー'}
                     </div>
                 `;
+                return;
+            }
+            
+            // 内部評価モードの場合
+            if (apiResponse.evaluation_mode === 'internal' && apiResponse.evaluated_results) {
+                displayInternalEvaluationResults(apiResponse);
                 return;
             }
 
@@ -1046,6 +1138,7 @@
             const maxResults = parseInt(document.getElementById('max-results').value);
             const useLLMExpansion = document.getElementById('llm-expansion').checked;
             const useLLMSummary = document.getElementById('llm-summary').checked;
+            const useInternalEvaluation = document.getElementById('internal-evaluation').checked;
 
             // 結果エリアをクリア
             const resultsContainer = document.getElementById('api-search-results');
@@ -1065,7 +1158,8 @@
                     method: searchMethod,
                     maxResults: maxResults,
                     useLLMExpansion: useLLMExpansion,
-                    useLLMSummary: useLLMSummary
+                    useLLMSummary: useLLMSummary,
+                    useInternalEvaluation: useInternalEvaluation
                 };
 
                 const apiResponse = await apiClient.searchResearchers(searchParams);
