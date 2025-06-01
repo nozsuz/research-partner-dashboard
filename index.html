@@ -1068,10 +1068,14 @@
                             </div>
                             
                             <div class="researcher-info"><span class="info-label">所属:</span> ${result.affiliation}</div>
-                            <div class="researcher-info"><span class="info-label">研究キーワード:</span> ${result.keywords}</div>
+                            <div class="researcher-info"><span class="info-label">研究キーワード:</span> ${result.keywords || 'N/A'}</div>
+                            ${result.fields ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${result.fields}</div>` : ''}
+                            ${result.profile ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${result.profile.length > 200 ? result.profile.substring(0, 200) + '...' : result.profile}</div>` : ''}
+                            ${result.paper_title ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${result.paper_title}</div>` : ''}
+                            ${result.project_title ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${result.project_title}</div>` : ''}
                             
                             <div class="ai-summary">
-                                <strong>評価サマリー:</strong> ${result.summary}
+                                <strong>AI関連性分析:</strong> ${result.summary}
                             </div>
                             
                             ${result.strengths && result.strengths.length > 0 ? `
