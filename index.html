@@ -470,12 +470,7 @@
                         
                         <div class="checkbox-group">
                             <input type="checkbox" id="llm-summary">
-                            <label for="llm-summary">⚡ AIによる関連性要約表示</label>
-                        </div>
-                        
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="internal-evaluation">
-                            <label for="internal-evaluation">🎯 内部評価モード（7つの観点で総合評価）</label>
+                            <label for="llm-summary">🤖 AI関連性分析（7つの観点でスコアリング）</label>
                         </div>
                         
                         <div class="form-group">
@@ -947,25 +942,10 @@
             }
         }
         
-        // AI要約と内部評価モードの連動処理
+        // AI関連性分析モードの処理
         function onLLMSummaryChange() {
             const llmSummaryCheckbox = document.getElementById('llm-summary');
-            const internalEvaluationCheckbox = document.getElementById('internal-evaluation');
-            
-            if (llmSummaryCheckbox.checked) {
-                // AI要約ONの場合は内部評価モードもON
-                internalEvaluationCheckbox.checked = true;
-            }
-        }
-        
-        function onInternalEvaluationChange() {
-            const llmSummaryCheckbox = document.getElementById('llm-summary');
-            const internalEvaluationCheckbox = document.getElementById('internal-evaluation');
-            
-            if (internalEvaluationCheckbox.checked) {
-                // 内部評価モードONの場合はAI要約もON
-                llmSummaryCheckbox.checked = true;
-            }
+            // AI関連性分析がONの場合、自動的に内部評価を使用
         }
 
         // 内部評価モードの結果表示関数
@@ -1089,13 +1069,13 @@
                                 <details style="margin-top: 10px;">
                                     <summary style="cursor: pointer; font-weight: 600;">詳細スコアを表示</summary>
                                     <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                                        <div>キーワード一致度: ${result.detail_scores.keyword_match || 'N/A'}/10</div>
-                                        <div>研究の直接性: ${result.detail_scores.research_directness || 'N/A'}/10</div>
-                                        <div>専門性の深さ: ${result.detail_scores.expertise_depth || 'N/A'}/10</div>
-                                        <div>具体的実績: ${result.detail_scores.practical_evidence || 'N/A'}/10</div>
-                                        <div>研究の質: ${result.detail_scores.research_quality || 'N/A'}/10</div>
-                                        <div>学際性: ${result.detail_scores.interdisciplinary || 'N/A'}/10</div>
-                                        <div>最新性: ${result.detail_scores.recency || 'N/A'}/10</div>
+                                        <div style="margin-bottom: 8px;"><strong>キーワード一致度:</strong> ${result.detail_scores.keyword_match || 'N/A'}/10${result.score_reasons && result.score_reasons.keyword_match ? `<br><small style="color: #666; margin-left: 20px;">${result.score_reasons.keyword_match}</small>` : ''}</div>
+                                        <div style="margin-bottom: 8px;"><strong>研究の直接性:</strong> ${result.detail_scores.research_directness || 'N/A'}/10${result.score_reasons && result.score_reasons.research_directness ? `<br><small style="color: #666; margin-left: 20px;">${result.score_reasons.research_directness}</small>` : ''}</div>
+                                        <div style="margin-bottom: 8px;"><strong>専門性の深さ:</strong> ${result.detail_scores.expertise_depth || 'N/A'}/10${result.score_reasons && result.score_reasons.expertise_depth ? `<br><small style="color: #666; margin-left: 20px;">${result.score_reasons.expertise_depth}</small>` : ''}</div>
+                                        <div style="margin-bottom: 8px;"><strong>具体的実績:</strong> ${result.detail_scores.practical_evidence || 'N/A'}/10${result.score_reasons && result.score_reasons.practical_evidence ? `<br><small style="color: #666; margin-left: 20px;">${result.score_reasons.practical_evidence}</small>` : ''}</div>
+                                        <div style="margin-bottom: 8px;"><strong>研究の質:</strong> ${result.detail_scores.research_quality || 'N/A'}/10${result.score_reasons && result.score_reasons.research_quality ? `<br><small style="color: #666; margin-left: 20px;">${result.score_reasons.research_quality}</small>` : ''}</div>
+                                        <div style="margin-bottom: 8px;"><strong>学際性:</strong> ${result.detail_scores.interdisciplinary || 'N/A'}/10${result.score_reasons && result.score_reasons.interdisciplinary ? `<br><small style="color: #666; margin-left: 20px;">${result.score_reasons.interdisciplinary}</small>` : ''}</div>
+                                        <div><strong>最新性:</strong> ${result.detail_scores.recency || 'N/A'}/10${result.score_reasons && result.score_reasons.recency ? `<br><small style="color: #666; margin-left: 20px;">${result.score_reasons.recency}</small>` : ''}</div>
                                     </div>
                                 </details>
                             ` : ''}
@@ -1225,7 +1205,7 @@
             const maxResults = parseInt(document.getElementById('max-results').value);
             const useLLMExpansion = document.getElementById('llm-expansion').checked;
             const useLLMSummary = document.getElementById('llm-summary').checked;
-            const useInternalEvaluation = document.getElementById('internal-evaluation').checked;
+            const useInternalEvaluation = useLLMSummary;  // AI関連性分析がONなら内部評価を使用
 
             // 結果エリアをクリア
             const resultsContainer = document.getElementById('api-search-results');
@@ -1378,16 +1358,10 @@
                 onSearchMethodChange();
             }
             
-            // AI要約と内部評価モードの連動
+            // AI関連性分析モードのイベントリスナー
             const llmSummaryCheckbox = document.getElementById('llm-summary');
-            const internalEvaluationCheckbox = document.getElementById('internal-evaluation');
-            
             if (llmSummaryCheckbox) {
                 llmSummaryCheckbox.addEventListener('change', onLLMSummaryChange);
-            }
-            
-            if (internalEvaluationCheckbox) {
-                internalEvaluationCheckbox.addEventListener('change', onInternalEvaluationChange);
             }
         });
     </script>
