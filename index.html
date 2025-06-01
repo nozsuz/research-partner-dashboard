@@ -946,18 +946,41 @@
                 llmExpansionLabel.title = '';
             }
         }
+        
+        // AI要約と内部評価モードの連動処理
+        function onLLMSummaryChange() {
+            const llmSummaryCheckbox = document.getElementById('llm-summary');
+            const internalEvaluationCheckbox = document.getElementById('internal-evaluation');
+            
+            if (llmSummaryCheckbox.checked) {
+                // AI要約ONの場合は内部評価モードもON
+                internalEvaluationCheckbox.checked = true;
+            }
+        }
+        
+        function onInternalEvaluationChange() {
+            const llmSummaryCheckbox = document.getElementById('llm-summary');
+            const internalEvaluationCheckbox = document.getElementById('internal-evaluation');
+            
+            if (internalEvaluationCheckbox.checked) {
+                // 内部評価モードONの場合はAI要約もON
+                llmSummaryCheckbox.checked = true;
+            }
+        }
 
         // 内部評価モードの結果表示関数
         function displayInternalEvaluationResults(apiResponse) {
             const resultsContainer = document.getElementById('api-search-results');
             
-            // サマリー表示
-            let html = `
+            // まず通常の検索結果を表示（resultsがある場合）
+            let html = '';
+            
+            // 成功メッセージ
+            html += `
                 <div class="alert alert-success">
-                    <h4>🎯 内部評価モード検索結果</h4>
-                    <p><strong>ベストマッチ:</strong> ${apiResponse.summary?.best_match || '該当なし'}</p>
-                    <p><strong>評価サマリー:</strong> ${apiResponse.summary?.key_finding || ''}</p>
-                    <p><small>評価完了: ${apiResponse.total}名 | 表示: ${apiResponse.displayed}件 | 実行時間: ${apiResponse.execution_time.toFixed(2)}秒</small></p>
+                    「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
+                    ${apiResponse.total}件見つかりました。
+                    <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
                 </div>
             `;
             
@@ -969,6 +992,66 @@
                         <strong>🧠 AIによるキーワード拡張:</strong><br>
                         <div style="margin-top: 8px;">
                             ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 通常の検索結果を表示（resultsがある場合）
+            if (apiResponse.results && apiResponse.results.length > 0) {
+                apiResponse.results.forEach((researcher) => {
+                    const name = researcher.name_ja || researcher.name_en || '名前不明';
+                    const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+                    const keywords = researcher.research_keywords_ja || 'N/A';
+                    const fields = researcher.research_fields_ja || 'N/A';
+                    const profile = researcher.profile_ja || 'N/A';
+                    const paper = researcher.paper_title_ja_first || 'N/A';
+                    const project = researcher.project_title_ja_first || 'N/A';
+                    const researchmapUrl = researcher.researchmap_url || '#';
+
+                    // スコア表示
+                    let scoreText = '';
+                    if (apiResponse.method === 'keyword' && researcher.relevance_score !== null) {
+                        scoreText = ` (関連度: ${researcher.relevance_score})`;
+                    } else if (apiResponse.method === 'semantic' && researcher.distance !== null) {
+                        scoreText = ` (距離: ${researcher.distance.toFixed(4)})`;
+                    }
+
+                    html += `
+                        <div class="researcher-card">
+                            <div class="researcher-name">${name} (${affiliation})${scoreText}</div>
+                            
+                            ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
+                            ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
+                            ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                            ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+                            ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
+                            
+                            ${researcher.llm_summary ? `
+                                <div class="ai-summary">
+                                    <strong>AI関連性分析:</strong> ${researcher.llm_summary}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="button-group">
+                                <button class="btn btn-secondary" onclick="showResearcherDetail('${name}')">詳細を見る</button>
+                                <button class="btn btn-primary" onclick="addToProjectCandidates('${name}')">プロジェクト候補に追加</button>
+                                ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // 評価結果のセクションヘッダー
+            if (apiResponse.evaluated_results && apiResponse.evaluated_results.length > 0) {
+                html += `
+                    <div style="margin-top: 40px; border-top: 3px solid #667eea; padding-top: 30px;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">🎯 内部評価結果</h2>
+                        <div class="alert alert-info">
+                            <h4>ベストマッチ: ${apiResponse.summary?.best_match || '該当なし'}</h4>
+                            <p><strong>評価サマリー:</strong> ${apiResponse.summary?.key_finding || ''}</p>
+                            <p><small>評価完了: ${apiResponse.total}名 | トップ${apiResponse.displayed}名を表示</small></p>
                         </div>
                     </div>
                 `;
@@ -1289,6 +1372,18 @@
                 searchMethodSelect.addEventListener('change', onSearchMethodChange);
                 // 初期状態を設定
                 onSearchMethodChange();
+            }
+            
+            // AI要約と内部評価モードの連動
+            const llmSummaryCheckbox = document.getElementById('llm-summary');
+            const internalEvaluationCheckbox = document.getElementById('internal-evaluation');
+            
+            if (llmSummaryCheckbox) {
+                llmSummaryCheckbox.addEventListener('change', onLLMSummaryChange);
+            }
+            
+            if (internalEvaluationCheckbox) {
+                internalEvaluationCheckbox.addEventListener('change', onInternalEvaluationChange);
             }
         });
     </script>
