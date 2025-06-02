@@ -1448,6 +1448,30 @@
             
             const statusEl = document.getElementById('save-status');
             
+            // 一時的に保存機能を無効化
+            statusEl.innerHTML = '<span style="color: #ff9800;">⚠️ 保存機能は現在開発中です</span>';
+            
+            // ローカルストレージに一時保存（ブラウザ内のみ）
+            try {
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                savedAnalyses.push({
+                    ...window.currentAnalysisData,
+                    saved_at: new Date().toISOString()
+                });
+                localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                
+                statusEl.innerHTML = '<span style="color: #4caf50;">✅ ブラウザ内に一時保存しました</span>';
+                
+                // 3秒後にモーダルを閉じる
+                setTimeout(() => {
+                    closeAnalysisModal();
+                }, 2000);
+            } catch (error) {
+                statusEl.innerHTML = '<span style="color: #dc3545;">❌ 一時保存に失敗しました</span>';
+                console.error('一時保存エラー:', error);
+            }
+            
+            /* バックエンドの保存機能が実装されたら以下を有効化
             try {
                 statusEl.innerHTML = '<span style="color: #667eea;">保存中...</span>';
                 
@@ -1456,7 +1480,6 @@
                 if (result.status === 'success') {
                     statusEl.innerHTML = '<span style="color: #28a745;">✅ 保存しました</span>';
                     
-                    // 3秒後にモーダルを閉じる
                     setTimeout(() => {
                         closeAnalysisModal();
                     }, 2000);
@@ -1468,6 +1491,7 @@
                 statusEl.innerHTML = '<span style="color: #dc3545;">❌ エラーが発生しました</span>';
                 console.error('保存エラー:', error);
             }
+            */
         }
 
         // プロジェクト候補追加
