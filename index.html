@@ -924,7 +924,7 @@
         const apiClient = new ResearcherSearchAPI();
         
         // 検索方法変更時の処理
-        function onSearchMethodChange() {
+        window.onSearchMethodChange = function() {
             const searchMethod = document.getElementById('search-method').value;
             const llmExpansionCheckbox = document.getElementById('llm-expansion');
             const llmExpansionLabel = llmExpansionCheckbox.parentElement.querySelector('label');
@@ -944,13 +944,13 @@
         }
         
         // AI関連性分析モードの処理
-        function onLLMSummaryChange() {
+        window.onLLMSummaryChange = function() {
             const llmSummaryCheckbox = document.getElementById('llm-summary');
             // AI関連性分析がONの場合、自動的に内部評価を使用
         }
 
         // 内部評価モードの結果表示関数
-        function displayInternalEvaluationResults(apiResponse) {
+        window.displayInternalEvaluationResults = function(apiResponse) {
             const resultsContainer = document.getElementById('api-search-results');
             
             // まず通常の検索結果を表示（resultsがある場合）
@@ -1098,7 +1098,7 @@
         }
         
         // API検索結果の表示関数
-        function displayAPISearchResults(apiResponse) {
+        window.displayAPISearchResults = function(apiResponse) {
             const resultsContainer = document.getElementById('api-search-results');
             
             if (!apiResponse || apiResponse.status !== 'success') {
@@ -1196,7 +1196,7 @@
         }
 
         // 実際のAPI検索関数
-        async function performAPISearch() {
+        window.performAPISearch = async function() {
             const searchInput = document.getElementById('api-search-input');
             const searchQuery = searchInput.value.trim();
             
@@ -1253,7 +1253,7 @@
         }
 
         // ヘルスチェック関数
-        async function checkAPIHealth() {
+        window.checkAPIHealth = async function() {
             try {
                 const statusElement = document.getElementById('api-status');
                 if (statusElement) {
@@ -1285,12 +1285,12 @@
         }
 
         // 研究者詳細表示
-        function showResearcherDetail(name) {
+        window.showResearcherDetail = function(name) {
             alert(`${name}の詳細ページへ遷移します（実装予定）`);
         }
         
         // ResearchMap APIを使用した詳細分析
-        async function analyzeResearcherDetail(researchmapUrl, query, basicInfo) {
+        window.analyzeResearcherDetail = async function(researchmapUrl, query, basicInfo) {
             if (!researchmapUrl || researchmapUrl === '#') {
                 alert('この研究者のResearchMap URLが利用できません。');
                 return;
@@ -1510,7 +1510,7 @@
         }
         
         // モーダルを閉じる
-        function closeAnalysisModal() {
+        window.closeAnalysisModal = function() {
             const modal = document.getElementById('analysis-modal');
             if (modal) {
                 modal.remove();
@@ -1518,7 +1518,7 @@
         }
         
         // 分析結果を保存
-        async function saveAnalysisResult() {
+        window.saveAnalysisResult = async function() {
             if (!window.currentAnalysisData || !window.currentAnalysisData.analysis_result) {
                 alert('保存する分析結果がありません');
                 return;
@@ -1549,11 +1549,11 @@
         }
 
         // プロジェクト候補追加
-        function addToProjectCandidates(name) {
+        window.addToProjectCandidates = function(name) {
             alert(`${name}をプロジェクト候補に追加しました。`);
         }
 
-        function showPage(page) {
+        window.showPage = function(page) {
             // すべてのページを非表示
             const pages = document.querySelectorAll('.page');
             pages.forEach(p => p.classList.add('hidden'));
@@ -1572,7 +1572,7 @@
             }
         }
 
-        function showTab(section, tab) {
+        window.showTab = function(section, tab) {
             // すべてのタブコンテンツを非表示
             const tabContents = document.querySelectorAll(`#${section}-page .tab-content`);
             tabContents.forEach(content => content.classList.remove('active'));
@@ -1586,7 +1586,7 @@
             event.target.classList.add('active');
         }
 
-        function showLogoutMessage() {
+        window.showLogoutMessage = function() {
             alert('ログアウトしました。');
         }
 
