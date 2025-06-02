@@ -561,17 +561,25 @@
                 statusEl.textContent = '保存中...';
                 saveBtn.disabled = true;
                 
-                const result = await saveAnalysis(currentAnalysisData);
+                // ローカルストレージに保存
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysisId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 
-                if (result.status === 'success') {
-                    statusEl.textContent = '✅ 保存しました';
-                    saveBtn.textContent = '✅ 保存済み';
-                    
-                    // 一覧を更新
-                    await loadSavedAnalyses();
-                } else {
-                    statusEl.textContent = '❌ 保存に失敗しました';
-                }
+                const analysisData = {
+                    ...currentAnalysisData,
+                    analysis_id: analysisId,
+                    created_at: new Date().toISOString(),
+                    session_id: getOrCreateSessionId()
+                };
+                
+                savedAnalyses.push(analysisData);
+                localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                
+                statusEl.textContent = '✅ 保存しました';
+                saveBtn.textContent = '✅ 保存済み';
+                
+                // 一覧を更新
+                await loadSavedAnalyses();
                 
             } catch (error) {
                 statusEl.textContent = '❌ エラーが発生しました';
@@ -588,11 +596,15 @@
         // 保存済み分析を読み込み
         async function loadSavedAnalyses() {
             try {
-                const result = await getSavedAnalyses();
+                // ローカルストレージから読み込み
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
                 const listEl = document.getElementById('saved-analyses-list');
                 
-                if (result.analyses && result.analyses.length > 0) {
-                    listEl.innerHTML = result.analyses.map(analysis => `
+                if (savedAnalyses.length > 0) {
+                    // 新しい順にソート
+                    savedAnalyses.sort((a, b) => new Date(b.created_at || b.saved_at) - new Date(a.created_at || a.saved_at));
+                    
+                    listEl.innerHTML = savedAnalyses.map(analysis => `
                         <div class="saved-analysis-item">
                             <div class="analysis-header">
                                 <div>
@@ -600,13 +612,13 @@
                                     <p>所属: ${analysis.affiliation || '不明'}</p>
                                     <p>検索クエリ: 「${analysis.query}」</p>
                                     <p>関連性スコア: ${analysis.relevance_score ? analysis.relevance_score + '/10' : 'N/A'}</p>
-                                    <p>保存日時: ${new Date(analysis.created_at).toLocaleString('ja-JP')}</p>
+                                    <p>保存日時: ${new Date(analysis.created_at || analysis.saved_at).toLocaleString('ja-JP')}</p>
                                 </div>
                                 <div class="analysis-buttons">
-                                    <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">
+                                    <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id || Math.random()}')">
                                         👁️ 詳細を見る
                                     </button>
-                                    <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id}')">
+                                    <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id || Math.random()}')">
                                         🗑️ 削除
                                     </button>
                                 </div>
@@ -627,8 +639,9 @@
         // 保存済み分析の詳細を表示
         async function viewSavedAnalysis(analysisId) {
             try {
-                const result = await getSavedAnalyses();
-                const analysis = result.analyses.find(a => a.analysis_id === analysisId);
+                // ローカルストレージから取得
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysis = savedAnalyses.find(a => (a.analysis_id || Math.random()) === analysisId);
                 
                 if (analysis) {
                     // モーダルに詳細を表示
@@ -654,6 +667,7 @@
                     
                     // 分析結果を表示
                     const tempDiv = document.createElement('div');
+                    currentAnalysisData = analysis; // 一時的に設定
                     displayAnalysisResult(analysis.analysis_result);
                     tempDiv.innerHTML = document.getElementById('analysis-content').innerHTML;
                     modalContent.appendChild(tempDiv);
@@ -674,14 +688,13 @@
             }
             
             try {
-                const result = await deleteAnalysis(analysisId);
+                // ローカルストレージから削除
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const filteredAnalyses = savedAnalyses.filter(a => (a.analysis_id || Math.random()) !== analysisId);
+                localStorage.setItem('researchAnalyses', JSON.stringify(filteredAnalyses));
                 
-                if (result.status === 'success') {
-                    alert('削除しました');
-                    await loadSavedAnalyses();
-                } else {
-                    alert('削除に失敗しました: ' + result.message);
-                }
+                alert('削除しました');
+                await loadSavedAnalyses();
                 
             } catch (error) {
                 console.error('削除エラー:', error);
