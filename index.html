@@ -1079,7 +1079,7 @@
                             ` : ''}
                             
                             <div class="button-group">
-                                <button class="btn btn-secondary" onclick="showAIAnalysis(${JSON.stringify(result).replace(/"/g, '&quot;')})">🤖 AI関連分析</button>
+                                <button class="btn btn-secondary" onclick="showResearcherDetail('${result.name}')">詳細を見る</button>
                                 <button class="btn btn-primary" onclick="addToProjectCandidates('${result.name}')">プロジェクト候補に追加</button>
                                 ${result.url ? `<a href="${result.url}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
                             </div>
@@ -1177,7 +1177,7 @@
                         ` : ''}
                         
                         <div class="button-group">
-                            <button class="btn btn-secondary" onclick="showAIAnalysis(${JSON.stringify(researcher).replace(/"/g, '&quot;')})">🤖 AI関連分析</button>
+                            <button class="btn btn-secondary" onclick="showResearcherDetail('${name}')">詳細を見る</button>
                             <button class="btn btn-primary" onclick="addToProjectCandidates('${name}')">プロジェクト候補に追加</button>
                             ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
                         </div>
@@ -1274,149 +1274,6 @@
                     statusElement.innerHTML = `🔴 API接続エラー - ${error.message}`;
                     statusElement.className = 'alert alert-warning';
                 }
-            }
-        }
-
-        // AI関連性分析を実行する関数
-        async function showAIAnalysis(researcherData) {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
-            `;
-            
-            const modalContent = document.createElement('div');
-            modalContent.style.cssText = `
-                background: white;
-                padding: 30px;
-                border-radius: 12px;
-                max-width: 800px;
-                max-height: 80vh;
-                overflow-y: auto;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            `;
-            
-            modalContent.innerHTML = `
-                <h2 style="color: #667eea; margin-bottom: 20px;">🤖 AI関連分析</h2>
-                <div class="loading">
-                    <div class="spinner"></div>
-                    AI分析を実行中...
-                </div>
-            `;
-            
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
-            
-            // モーダルを閉じるイベント
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            });
-            
-            try {
-                // AI分析APIを呼び出す
-                const searchQuery = document.getElementById('api-search-input').value.trim();
-                const response = await fetch(`${apiClient.baseURL}/api/analyze`, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        researcher: researcherData,
-                        query: searchQuery
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const analysisResult = await response.json();
-                
-                // 結果を表示
-                const name = researcherData.name_ja || researcherData.name || '名前不明';
-                const affiliation = researcherData.main_affiliation_name_ja || researcherData.affiliation || '所属不明';
-                
-                modalContent.innerHTML = `
-                    <h2 style="color: #667eea; margin-bottom: 20px;">🤖 AI関連分析</h2>
-                    <h3>${name} (${affiliation})</h3>
-                    
-                    <div class="ai-summary" style="margin: 20px 0;">
-                        <strong>AI関連性分析:</strong>
-                        <p style="margin-top: 10px;">${analysisResult.summary}</p>
-                    </div>
-                    
-                    ${analysisResult.total_score ? `
-                        <div class="score-badge" style="margin: 20px 0; display: inline-block;">
-                            総合スコア: ${analysisResult.total_score}/10
-                        </div>
-                    ` : ''}
-                    
-                    ${analysisResult.strengths && analysisResult.strengths.length > 0 ? `
-                        <div style="margin: 15px 0;">
-                            <strong>強み:</strong>
-                            ${analysisResult.strengths.map(strength => `<span class="keyword-tag" style="background: #4caf50; margin-left: 5px;">${strength}</span>`).join('')}
-                        </div>
-                    ` : ''}
-                    
-                    ${analysisResult.scores ? `
-                        <div style="margin-top: 20px;">
-                            <h4>詳細スコア</h4>
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                ${Object.entries(analysisResult.scores).map(([key, value]) => {
-                                    const labels = {
-                                        keyword_match: 'キーワード一致度',
-                                        research_directness: '研究の直接性',
-                                        expertise_depth: '専門性の深さ',
-                                        practical_evidence: '具体的実績',
-                                        research_quality: '研究の質',
-                                        interdisciplinary: '学際性',
-                                        recency: '最新性'
-                                    };
-                                    const reason = analysisResult.score_reasons && analysisResult.score_reasons[key] || '';
-                                    return `
-                                        <div style="margin-bottom: 12px;">
-                                            <strong>${labels[key] || key}:</strong> ${value}/10
-                                            ${reason ? `<br><small style="color: #666; margin-left: 20px;">${reason}</small>` : ''}
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    <div style="margin-top: 20px; text-align: right;">
-                        <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()" style="margin-right: 10px;">
-                            閉じる
-                        </button>
-                        <button class="btn btn-primary" onclick="addToProjectCandidates('${name.replace(/'/g, "\\'")}'); this.parentElement.parentElement.parentElement.remove();">
-                            プロジェクト候補に追加
-                        </button>
-                    </div>
-                `;
-                
-            } catch (error) {
-                console.error('AI分析エラー:', error);
-                modalContent.innerHTML = `
-                    <h2 style="color: #667eea; margin-bottom: 20px;">🤖 AI関連性分析</h2>
-                    <div class="alert alert-warning">
-                        AI分析でエラーが発生しました。<br>
-                        ${error.message}
-                    </div>
-                    <button class="btn btn-secondary" onclick="this.parentElement.parentElement.remove()">
-                        閉じる
-                    </button>
-                `;
             }
         }
 
