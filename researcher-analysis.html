@@ -656,12 +656,22 @@
                 const listEl = document.getElementById('saved-analyses-list');
                 
                 if (savedAnalyses.length > 0) {
-                    // 新しい順にソート
-                    savedAnalyses.sort((a, b) => new Date(b.created_at || b.saved_at) - new Date(a.created_at || a.saved_at));
+                    // 各分析にユニークIDを確実に付与
+                    savedAnalyses.forEach((analysis, index) => {
+                        if (!analysis.analysis_id) {
+                            analysis.analysis_id = `analysis_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+                        }
+                    });
                     
-                    listEl.innerHTML = savedAnalyses.map((analysis, index) => {
-                        // analysis_idがない場合はインデックスを使用
-                        const id = analysis.analysis_id || `temp_${index}`;
+                    // 更新されたデータを保存
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                    
+                    // 新しい順にソート
+                    const sortedAnalyses = [...savedAnalyses].sort((a, b) => 
+                        new Date(b.created_at || b.saved_at) - new Date(a.created_at || a.saved_at)
+                    );
+                    
+                    listEl.innerHTML = sortedAnalyses.map(analysis => {
                         return `
                             <div class="saved-analysis-item">
                                 <div class="analysis-header">
@@ -673,10 +683,10 @@
                                         <p>保存日時: ${new Date(analysis.created_at || analysis.saved_at).toLocaleString('ja-JP')}</p>
                                     </div>
                                     <div class="analysis-buttons">
-                                        <button class="btn btn-secondary" onclick="viewSavedAnalysis('${id}')">
+                                        <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">
                                             👁️ 詳細を見る
                                         </button>
-                                        <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${id}')">
+                                        <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id}')">
                                             🗑️ 削除
                                         </button>
                                     </div>
@@ -701,14 +711,8 @@
                 // ローカルストレージから取得
                 const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
                 
-                // analysis_idまたはtemp_インデックスで検索
-                let analysis;
-                if (analysisId.startsWith('temp_')) {
-                    const index = parseInt(analysisId.replace('temp_', ''));
-                    analysis = savedAnalyses[index];
-                } else {
-                    analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
-                }
+                // analysis_idで検索
+                const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
                 
                 if (analysis) {
                     // モーダルに詳細を表示
@@ -757,14 +761,7 @@
             try {
                 // ローカルストレージから削除
                 const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
-                let filteredAnalyses;
-                
-                if (analysisId.startsWith('temp_')) {
-                    const index = parseInt(analysisId.replace('temp_', ''));
-                    filteredAnalyses = savedAnalyses.filter((_, i) => i !== index);
-                } else {
-                    filteredAnalyses = savedAnalyses.filter(a => a.analysis_id !== analysisId);
-                }
+                const filteredAnalyses = savedAnalyses.filter(a => a.analysis_id !== analysisId);
                 
                 localStorage.setItem('researchAnalyses', JSON.stringify(filteredAnalyses));
                 
