@@ -502,44 +502,98 @@
             let html = '';
             
             // 研究者基本情報
-            if (analysis.researcher_info) {
+            if (analysis.researcher_name) {
                 html += `
                     <h3>研究者情報</h3>
                     <div class="info-item">
-                        <span class="info-label">氏名:</span> ${analysis.researcher_info.name || 'N/A'}
+                        <span class="info-label">氏名:</span> ${analysis.researcher_name}
                     </div>
                     <div class="info-item">
-                        <span class="info-label">所属:</span> ${analysis.researcher_info.main_affiliation || 'N/A'}
+                        <span class="info-label">所属:</span> ${analysis.affiliation || 'N/A'}
                     </div>
                 `;
             }
             
-            // 関連性スコア
-            if (analysis.relevance_score !== undefined) {
+            // スコア情報
+            if (analysis.scores) {
                 html += `
-                    <h3>関連性評価</h3>
+                    <h3>評価スコア</h3>
                     <div class="info-item">
-                        <span class="info-label">スコア:</span> ${analysis.relevance_score}/10
+                        <span class="info-label">総合評価:</span> ${analysis.scores.total || 0}/100
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">技術的関連性:</span> ${analysis.scores.technical_relevance || 0}/40
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">実績・影響力:</span> ${analysis.scores.achievements || 0}/30
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">実用化可能性:</span> ${analysis.scores.practical_applicability || 0}/30
+                    </div>
+                `;
+            }
+            
+            // 研究実績数
+            if (analysis.total_papers !== undefined || analysis.total_projects !== undefined) {
+                html += `
+                    <h3>研究実績</h3>
+                    <div class="info-item">
+                        <span class="info-label">論文数:</span> ${analysis.total_papers || 0}件
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">プロジェクト数:</span> ${analysis.total_projects || 0}件
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">受賞歴:</span> ${analysis.total_awards || 0}件
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">特許:</span> ${analysis.total_patents || 0}件
                     </div>
                 `;
             }
             
             // AI分析結果
-            if (analysis.analysis_text) {
+            if (analysis.detailed_analysis) {
                 html += `
                     <h3>AI分析結果</h3>
-                    <div style="white-space: pre-wrap; line-height: 1.8;">${analysis.analysis_text}</div>
+                    <div style="white-space: pre-wrap; line-height: 1.8; background: #f8f9fa; padding: 15px; border-radius: 8px;">${analysis.detailed_analysis}</div>
                 `;
             }
             
-            // 研究実績
-            if (analysis.research_achievements) {
+            // 主要論文
+            if (analysis.top_papers && analysis.top_papers.length > 0) {
                 html += `
-                    <h3>主要な研究実績</h3>
+                    <h3>主要論文</h3>
                     <ul>
                 `;
-                for (const achievement of analysis.research_achievements) {
-                    html += `<li>${achievement}</li>`;
+                for (const paper of analysis.top_papers) {
+                    html += `<li><strong>[${paper.year}]</strong> ${paper.title_ja || paper.title_en}${paper.journal ? ` - ${paper.journal}` : ''}</li>`;
+                }
+                html += `</ul>`;
+            }
+            
+            // 主要プロジェクト
+            if (analysis.key_projects && analysis.key_projects.length > 0) {
+                html += `
+                    <h3>主要プロジェクト</h3>
+                    <ul>
+                `;
+                for (const project of analysis.key_projects) {
+                    html += `<li>${project.title} (${project.period})</li>`;
+                }
+                html += `</ul>`;
+            }
+            
+            // 主要特許
+            if (analysis.key_patents && analysis.key_patents.length > 0) {
+                html += `
+                    <h3>主要特許</h3>
+                    <ul>
+                `;
+                for (const patent of analysis.key_patents) {
+                    html += `<li><strong>${patent.title}</strong><br>
+                        出願番号: ${patent.application_number || '不明'} / 
+                        特許番号: ${patent.patent_number || '（審査中）'}</li>`;
                 }
                 html += `</ul>`;
             }
@@ -604,27 +658,31 @@
                     // 新しい順にソート
                     savedAnalyses.sort((a, b) => new Date(b.created_at || b.saved_at) - new Date(a.created_at || a.saved_at));
                     
-                    listEl.innerHTML = savedAnalyses.map(analysis => `
-                        <div class="saved-analysis-item">
-                            <div class="analysis-header">
-                                <div>
-                                    <h4>${analysis.researcher_name}</h4>
-                                    <p>所属: ${analysis.affiliation || '不明'}</p>
-                                    <p>検索クエリ: 「${analysis.query}」</p>
-                                    <p>関連性スコア: ${analysis.relevance_score ? analysis.relevance_score + '/10' : 'N/A'}</p>
-                                    <p>保存日時: ${new Date(analysis.created_at || analysis.saved_at).toLocaleString('ja-JP')}</p>
-                                </div>
-                                <div class="analysis-buttons">
-                                    <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id || Math.random()}')">
-                                        👁️ 詳細を見る
-                                    </button>
-                                    <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id || Math.random()}')">
-                                        🗑️ 削除
-                                    </button>
+                    listEl.innerHTML = savedAnalyses.map((analysis, index) => {
+                        // analysis_idがない場合はインデックスを使用
+                        const id = analysis.analysis_id || `temp_${index}`;
+                        return `
+                            <div class="saved-analysis-item">
+                                <div class="analysis-header">
+                                    <div>
+                                        <h4>${analysis.researcher_name}</h4>
+                                        <p>所属: ${analysis.affiliation || '不明'}</p>
+                                        <p>検索クエリ: 「${analysis.query}」</p>
+                                        <p>関連性スコア: ${analysis.relevance_score ? analysis.relevance_score + '/10' : 'N/A'}</p>
+                                        <p>保存日時: ${new Date(analysis.created_at || analysis.saved_at).toLocaleString('ja-JP')}</p>
+                                    </div>
+                                    <div class="analysis-buttons">
+                                        <button class="btn btn-secondary" onclick="viewSavedAnalysis('${id}')">
+                                            👁️ 詳細を見る
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${id}')">
+                                            🗑️ 削除
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 } else {
                     listEl.innerHTML = '<p>保存済みの分析結果はありません</p>';
                 }
@@ -641,7 +699,15 @@
             try {
                 // ローカルストレージから取得
                 const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
-                const analysis = savedAnalyses.find(a => (a.analysis_id || Math.random()) === analysisId);
+                
+                // analysis_idまたはtemp_インデックスで検索
+                let analysis;
+                if (analysisId.startsWith('temp_')) {
+                    const index = parseInt(analysisId.replace('temp_', ''));
+                    analysis = savedAnalyses[index];
+                } else {
+                    analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+                }
                 
                 if (analysis) {
                     // モーダルに詳細を表示
@@ -690,7 +756,15 @@
             try {
                 // ローカルストレージから削除
                 const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
-                const filteredAnalyses = savedAnalyses.filter(a => (a.analysis_id || Math.random()) !== analysisId);
+                let filteredAnalyses;
+                
+                if (analysisId.startsWith('temp_')) {
+                    const index = parseInt(analysisId.replace('temp_', ''));
+                    filteredAnalyses = savedAnalyses.filter((_, i) => i !== index);
+                } else {
+                    filteredAnalyses = savedAnalyses.filter(a => a.analysis_id !== analysisId);
+                }
+                
                 localStorage.setItem('researchAnalyses', JSON.stringify(filteredAnalyses));
                 
                 alert('削除しました');
