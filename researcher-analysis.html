@@ -470,8 +470,9 @@
                         researcher_name: researcherName,
                         query: query,
                         analysis_result: result.analysis,
-                        relevance_score: result.analysis.relevance_score || null,
-                        affiliation: result.analysis.researcher_info?.main_affiliation || null
+                        // 分析結果から所属と関連性スコアを抽出
+                        affiliation: result.analysis.affiliation || result.analysis.researcher_info?.main_affiliation || '不明',
+                        relevance_score: result.analysis.scores?.total || null
                     };
                     
                     // 保存ボタンを有効化
@@ -668,7 +669,7 @@
                                         <h4>${analysis.researcher_name}</h4>
                                         <p>所属: ${analysis.affiliation || '不明'}</p>
                                         <p>検索クエリ: 「${analysis.query}」</p>
-                                        <p>関連性スコア: ${analysis.relevance_score ? analysis.relevance_score + '/10' : 'N/A'}</p>
+                                        <p>総合評価スコア: ${analysis.relevance_score !== null && analysis.relevance_score !== undefined ? analysis.relevance_score + '/100' : 'N/A'}</p>
                                         <p>保存日時: ${new Date(analysis.created_at || analysis.saved_at).toLocaleString('ja-JP')}</p>
                                     </div>
                                     <div class="analysis-buttons">
