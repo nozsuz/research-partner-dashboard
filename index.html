@@ -1392,6 +1392,10 @@
                                     <div style="font-size: 20px; color: #ffc107;">${analysis.total_awards || 0}件</div>
                                     <div style="color: #495057; font-size: 14px;">受賞歴</div>
                                 </div>
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                                    <div style="font-size: 20px; color: #2196f3;">${analysis.total_patents || 0}件</div>
+                                    <div style="color: #495057; font-size: 14px;">特許</div>
+                                </div>
                             </div>
                             
                             <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -1436,6 +1440,25 @@
                                             <li style="background: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e9ecef;">
                                                 ${project.title}
                                                 <br><small style="color: #7f8c8d;">${project.period}</small>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            
+                            ${analysis.key_patents && analysis.key_patents.length > 0 ? `
+                                <div style="margin-bottom: 20px;">
+                                    <h4 style="color: #495057; margin-bottom: 15px;">💡 主要特許</h4>
+                                    <ul style="list-style: none; padding: 0;">
+                                        ${analysis.key_patents.map(patent => `
+                                            <li style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e9ecef; border-left: 4px solid #2196f3;">
+                                                <strong>${patent.title}</strong>
+                                                <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; color: #666;">
+                                                    <div><strong>出願番号:</strong> ${patent.application_number || '不明'}</div>
+                                                    <div><strong>特許番号:</strong> ${patent.patent_number || '（審査中）'}</div>
+                                                    <div><strong>出願日:</strong> ${patent.application_date || '不明'}</div>
+                                                    <div><strong>発明者:</strong> ${patent.inventors || '不明'}</div>
+                                                </div>
                                             </li>
                                         `).join('')}
                                     </ul>
