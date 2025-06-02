@@ -309,70 +309,7 @@ async function deleteAnalysis(analysisId) {
     }
 }
 
-// displayAPISearchResults関数はindex.html内で定義されているため、ここでは削除
-
-// 実際のAPI検索関数（変更なし）
-async function performAPISearch() {
-    const searchInput = document.getElementById('api-search-input');
-    const searchQuery = searchInput.value.trim();
-    
-    if (!searchQuery) {
-        alert('検索キーワードを入力してください。');
-        return;
-    }
-
-    // 検索オプションの取得
-    const searchMethod = document.getElementById('search-method').value;
-    const maxResults = parseInt(document.getElementById('max-results').value);
-    const useLLMExpansion = document.getElementById('llm-expansion').checked;
-    const useLLMSummary = document.getElementById('llm-summary').checked;
-
-    // 結果エリアをクリア
-    const resultsContainer = document.getElementById('api-search-results');
-    
-    // ローディング表示
-    resultsContainer.innerHTML = `
-        <div class="loading">
-            <div class="spinner"></div>
-            API検索を実行中...
-        </div>
-    `;
-
-    try {
-        // API検索実行
-        const searchParams = {
-            query: searchQuery,
-            method: searchMethod,
-            maxResults: maxResults,
-            useLLMExpansion: useLLMExpansion,
-            useLLMSummary: useLLMSummary
-        };
-
-        console.log('API検索開始:', searchParams);
-        const apiResponse = await apiClient.searchResearchers(searchParams);
-        console.log('API検索結果:', apiResponse);
-
-        // 結果表示
-        displayAPISearchResults(apiResponse);
-
-    } catch (error) {
-        console.error('API検索エラー:', error);
-        resultsContainer.innerHTML = `
-            <div class="alert alert-warning">
-                <h4>🔴 API検索でエラーが発生しました</h4>
-                <p><strong>エラー内容:</strong> ${error.message}</p>
-                <hr>
-                <h5>🔧 トラブルシューティング:</h5>
-                <ul>
-                    <li>📡 <strong>接続テスト:</strong> <button class="btn btn-secondary" onclick="performConnectionDiagnostic()">診断実行</button></li>
-                    <li>🔄 しばらく待ってから再試行してください</li>
-                    <li>📝 Railway管理画面でサーバーの状態を確認してください</li>
-                    <li>🌐 ネットワーク接続を確認してください</li>
-                </ul>
-            </div>
-        `;
-    }
-}
+// displayAPISearchResults関数とperformAPISearch関数はindex.html内で定義されているため、ここでは削除
 
 // 接続診断関数（新規追加）
 async function performConnectionDiagnostic() {
