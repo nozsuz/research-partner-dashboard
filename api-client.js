@@ -1,10 +1,13 @@
 // 改良されたAPI設定とユーティリティ関数
 class ResearcherSearchAPI {
     constructor() {
-        // 環境に応じてAPIのベースURLを設定
-        this.baseURL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:8000'  // ローカル開発
-            : 'https://research-partner-dashboard.vercel.app';  // 本番環境
+        // config.jsからAPIのベースURLを取得
+        // config.jsが読み込まれていない場合のフォールバック付き
+        this.baseURL = (typeof API_CONFIG !== 'undefined' && API_CONFIG.baseURL) 
+            ? API_CONFIG.baseURL 
+            : (window.location.hostname === 'localhost' 
+                ? 'http://localhost:8000' 
+                : 'https://researcher-search-app-production.up.railway.app');
         
         console.log('API Base URL:', this.baseURL);
         console.log('Current hostname:', window.location.hostname);
