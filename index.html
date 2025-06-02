@@ -841,6 +841,7 @@
     </div>
 
     <script src="config.js"></script>
+    <script src="api-client.js"></script>
     <script>
         // APIクライアントクラス
         class ResearcherSearchAPI {
@@ -1185,6 +1186,7 @@
                             <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
                             <button class="btn btn-primary" onclick="addToProjectCandidates('${name}')">プロジェクト候補に追加</button>
                             ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                            <a href="researcher-analysis.html?name=${encodeURIComponent(name)}&url=${encodeURIComponent(researchmapUrl)}&query=${encodeURIComponent(apiResponse.query)}" class="btn btn-secondary">📊 分析結果管理</a>
                         </div>
                     </div>
                 `;
@@ -1339,11 +1341,27 @@
                                 ResearchMapから詳細情報を取得して分析中...
                             </div>
                         </div>
+                        
+                        <div id="analysis-actions" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                            <button onclick="saveAnalysisResult()" class="btn btn-primary" style="width: 100%;">
+                                💾 この分析結果を保存
+                            </button>
+                            <div id="save-status" style="margin-top: 10px; text-align: center;"></div>
+                        </div>
                     </div>
                 </div>
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 現在の分析データをグローバル変数に保存
+            window.currentAnalysisData = {
+                researchmap_url: researchmapUrl,
+                researcher_name: basicInfo.name,
+                affiliation: basicInfo.affiliation,
+                query: query,
+                analysis_result: null
+            };
             
             try {
                 // API呼び出し
@@ -1468,6 +1486,13 @@
                     `;
                     
                     document.getElementById('analysis-content').innerHTML = contentHtml;
+                    
+                    // 分析結果をグローバル変数に保存
+                    window.currentAnalysisData.analysis_result = analysis;
+                    window.currentAnalysisData.relevance_score = analysis.scores ? analysis.scores.total : null;
+                    
+                    // 保存ボタンを表示
+                    document.getElementById('analysis-actions').style.display = 'block';
                 } else {
                     throw new Error(data.error || '分析に失敗しました');
                 }
@@ -1489,6 +1514,37 @@
             const modal = document.getElementById('analysis-modal');
             if (modal) {
                 modal.remove();
+            }
+        }
+        
+        // 分析結果を保存
+        async function saveAnalysisResult() {
+            if (!window.currentAnalysisData || !window.currentAnalysisData.analysis_result) {
+                alert('保存する分析結果がありません');
+                return;
+            }
+            
+            const statusEl = document.getElementById('save-status');
+            
+            try {
+                statusEl.innerHTML = '<span style="color: #667eea;">保存中...</span>';
+                
+                const result = await saveAnalysis(window.currentAnalysisData);
+                
+                if (result.status === 'success') {
+                    statusEl.innerHTML = '<span style="color: #28a745;">✅ 保存しました</span>';
+                    
+                    // 3秒後にモーダルを閉じる
+                    setTimeout(() => {
+                        closeAnalysisModal();
+                    }, 2000);
+                } else {
+                    statusEl.innerHTML = '<span style="color: #dc3545;">❌ 保存に失敗しました</span>';
+                }
+                
+            } catch (error) {
+                statusEl.innerHTML = '<span style="color: #dc3545;">❌ エラーが発生しました</span>';
+                console.error('保存エラー:', error);
             }
         }
 

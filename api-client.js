@@ -216,6 +216,96 @@ class ResearcherSearchAPI {
 // グローバルAPIクライアントインスタンス
 const apiClient = new ResearcherSearchAPI();
 
+// セッションID管理
+function getOrCreateSessionId() {
+    let sessionId = sessionStorage.getItem('session_id');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('session_id', sessionId);
+    }
+    return sessionId;
+}
+
+// 分析結果を保存
+async function saveAnalysis(analysisData) {
+    try {
+        const response = await fetch(`${apiClient.baseURL}/api/save-analysis`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ...analysisData,
+                session_id: getOrCreateSessionId()
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('分析結果保存成功:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('分析結果保存エラー:', error);
+        throw error;
+    }
+}
+
+// 保存済み分析を取得
+async function getSavedAnalyses(query = null) {
+    try {
+        const response = await fetch(`${apiClient.baseURL}/api/get-saved-analyses`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                session_id: getOrCreateSessionId(),
+                query: query,
+                limit: 50
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        return result;
+        
+    } catch (error) {
+        console.error('保存済み分析取得エラー:', error);
+        throw error;
+    }
+}
+
+// 分析結果を削除
+async function deleteAnalysis(analysisId) {
+    try {
+        const sessionId = getOrCreateSessionId();
+        const response = await fetch(
+            `${apiClient.baseURL}/api/delete-analysis/${analysisId}?session_id=${sessionId}`,
+            {
+                method: 'DELETE'
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        return result;
+        
+    } catch (error) {
+        console.error('分析結果削除エラー:', error);
+        throw error;
+    }
+}
+
 // API検索結果の表示関数（変更なし）
 function displayAPISearchResults(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');

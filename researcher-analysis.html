@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>研究者詳細分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        .back-btn:hover {
+            background: #5a6268;
+            color: white;
+        }
+        
+        .info-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .info-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #0c5460;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #155724;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #856404;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #721c24;
+            color: #721c24;
+        }
+        
+        #analysis-result-container {
+            display: none;
+        }
+        
+        #analysis-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        #analysis-content h3 {
+            color: #2c3e50;
+            margin: 20px 0 15px 0;
+            font-size: 18px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        #analysis-content ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        #analysis-content p {
+            margin-bottom: 15px;
+        }
+        
+        .analysis-actions {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .saved-analyses-section {
+            margin-top: 40px;
+        }
+        
+        .saved-analyses-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        .saved-analysis-item {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .saved-analysis-item h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .saved-analysis-item p {
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+        
+        .analysis-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* モーダル用スタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← 研究者検索へ戻る</a>
+        
+        <div class="header">
+            <h1>🔬 研究者詳細分析</h1>
+            <p>ResearchMapの詳細情報を基にAIが分析を行います</p>
+        </div>
+        
+        <!-- 分析リクエストフォーム -->
+        <div class="info-section">
+            <h2>分析設定</h2>
+            <div class="form-group">
+                <label>研究者名</label>
+                <input type="text" id="researcher-name" class="form-control" placeholder="例: 山田 太郎" value="">
+            </div>
+            
+            <div class="form-group">
+                <label>ResearchMap URL</label>
+                <input type="text" id="researchmap-url" class="form-control" placeholder="https://researchmap.jp/xxxxx" value="">
+            </div>
+            
+            <div class="form-group">
+                <label>分析クエリ（どんな観点で分析するか）</label>
+                <input type="text" id="analysis-query" class="form-control" placeholder="例: AI材料探索、機械学習、ナノテクノロジー" value="">
+            </div>
+            
+            <button class="btn btn-primary" onclick="startAnalysis()">
+                🤖 AI分析を開始
+            </button>
+        </div>
+        
+        <!-- 分析結果表示エリア -->
+        <div id="analysis-result-container">
+            <div class="info-section">
+                <h2>分析結果</h2>
+                <div id="analysis-content">
+                    <!-- 分析結果がここに表示される -->
+                </div>
+            </div>
+            
+            <!-- 保存ボタン -->
+            <div class="analysis-actions">
+                <button id="save-analysis-btn" class="btn btn-primary" onclick="saveCurrentAnalysis()">
+                    💾 この分析結果を保存
+                </button>
+                <span id="save-status"></span>
+            </div>
+        </div>
+        
+        <!-- 保存済み分析一覧 -->
+        <div class="saved-analyses-section">
+            <h3>📂 保存済みの分析結果</h3>
+            <div id="saved-analyses-list">
+                <p>読み込み中...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分析詳細表示用モーダル -->
+    <div id="analysisModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>分析結果詳細</h2>
+            <div id="modal-analysis-content"></div>
+        </div>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script>
+        // グローバル変数で現在の分析結果を保持
+        let currentAnalysisData = null;
+        
+        // URLパラメータから初期値を設定
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const researcherName = urlParams.get('name');
+            const researchmapUrl = urlParams.get('url');
+            const query = urlParams.get('query');
+            
+            if (researcherName) {
+                document.getElementById('researcher-name').value = researcherName;
+            }
+            if (researchmapUrl) {
+                document.getElementById('researchmap-url').value = researchmapUrl;
+            }
+            if (query) {
+                document.getElementById('analysis-query').value = query;
+            }
+            
+            // 保存済み分析を読み込み
+            loadSavedAnalyses();
+            
+            // モーダルの設定
+            const modal = document.getElementById('analysisModal');
+            const span = document.getElementsByClassName('close')[0];
+            
+            span.onclick = function() {
+                modal.style.display = 'none';
+            }
+            
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        });
+        
+        // AI分析を開始
+        async function startAnalysis() {
+            const researcherName = document.getElementById('researcher-name').value.trim();
+            const researchmapUrl = document.getElementById('researchmap-url').value.trim();
+            const query = document.getElementById('analysis-query').value.trim();
+            
+            if (!researcherName || !researchmapUrl || !query) {
+                alert('すべての項目を入力してください');
+                return;
+            }
+            
+            // 結果エリアを表示してローディング表示
+            const resultContainer = document.getElementById('analysis-result-container');
+            const contentDiv = document.getElementById('analysis-content');
+            
+            resultContainer.style.display = 'block';
+            contentDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    AI分析を実行中...
+                </div>
+            `;
+            
+            try {
+                // API呼び出し
+                const response = await fetch(`${apiClient.baseURL}/api/analyze-researcher`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        researchmap_url: researchmapUrl,
+                        query: query,
+                        researcher_basic_info: {
+                            name_ja: researcherName
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.analysis) {
+                    // 分析結果を表示
+                    displayAnalysisResult(result.analysis);
+                    
+                    // 現在の分析データを保持
+                    currentAnalysisData = {
+                        researchmap_url: researchmapUrl,
+                        researcher_name: researcherName,
+                        query: query,
+                        analysis_result: result.analysis,
+                        relevance_score: result.analysis.relevance_score || null,
+                        affiliation: result.analysis.researcher_info?.main_affiliation || null
+                    };
+                    
+                    // 保存ボタンを有効化
+                    document.getElementById('save-analysis-btn').disabled = false;
+                    
+                } else {
+                    contentDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            分析に失敗しました: ${result.error || '不明なエラー'}
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('分析エラー:', error);
+                contentDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        エラーが発生しました: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // 分析結果を表示
+        function displayAnalysisResult(analysis) {
+            const contentDiv = document.getElementById('analysis-content');
+            
+            let html = '';
+            
+            // 研究者基本情報
+            if (analysis.researcher_info) {
+                html += `
+                    <h3>研究者情報</h3>
+                    <div class="info-item">
+                        <span class="info-label">氏名:</span> ${analysis.researcher_info.name || 'N/A'}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">所属:</span> ${analysis.researcher_info.main_affiliation || 'N/A'}
+                    </div>
+                `;
+            }
+            
+            // 関連性スコア
+            if (analysis.relevance_score !== undefined) {
+                html += `
+                    <h3>関連性評価</h3>
+                    <div class="info-item">
+                        <span class="info-label">スコア:</span> ${analysis.relevance_score}/10
+                    </div>
+                `;
+            }
+            
+            // AI分析結果
+            if (analysis.analysis_text) {
+                html += `
+                    <h3>AI分析結果</h3>
+                    <div style="white-space: pre-wrap; line-height: 1.8;">${analysis.analysis_text}</div>
+                `;
+            }
+            
+            // 研究実績
+            if (analysis.research_achievements) {
+                html += `
+                    <h3>主要な研究実績</h3>
+                    <ul>
+                `;
+                for (const achievement of analysis.research_achievements) {
+                    html += `<li>${achievement}</li>`;
+                }
+                html += `</ul>`;
+            }
+            
+            contentDiv.innerHTML = html;
+        }
+        
+        // 分析結果を保存
+        async function saveCurrentAnalysis() {
+            if (!currentAnalysisData) {
+                alert('保存する分析結果がありません');
+                return;
+            }
+            
+            const statusEl = document.getElementById('save-status');
+            const saveBtn = document.getElementById('save-analysis-btn');
+            
+            try {
+                statusEl.textContent = '保存中...';
+                saveBtn.disabled = true;
+                
+                const result = await saveAnalysis(currentAnalysisData);
+                
+                if (result.status === 'success') {
+                    statusEl.textContent = '✅ 保存しました';
+                    saveBtn.textContent = '✅ 保存済み';
+                    
+                    // 一覧を更新
+                    await loadSavedAnalyses();
+                } else {
+                    statusEl.textContent = '❌ 保存に失敗しました';
+                }
+                
+            } catch (error) {
+                statusEl.textContent = '❌ エラーが発生しました';
+                console.error('保存エラー:', error);
+            } finally {
+                setTimeout(() => {
+                    saveBtn.disabled = false;
+                    statusEl.textContent = '';
+                    saveBtn.textContent = '💾 この分析結果を保存';
+                }, 3000);
+            }
+        }
+        
+        // 保存済み分析を読み込み
+        async function loadSavedAnalyses() {
+            try {
+                const result = await getSavedAnalyses();
+                const listEl = document.getElementById('saved-analyses-list');
+                
+                if (result.analyses && result.analyses.length > 0) {
+                    listEl.innerHTML = result.analyses.map(analysis => `
+                        <div class="saved-analysis-item">
+                            <div class="analysis-header">
+                                <div>
+                                    <h4>${analysis.researcher_name}</h4>
+                                    <p>所属: ${analysis.affiliation || '不明'}</p>
+                                    <p>検索クエリ: 「${analysis.query}」</p>
+                                    <p>関連性スコア: ${analysis.relevance_score ? analysis.relevance_score + '/10' : 'N/A'}</p>
+                                    <p>保存日時: ${new Date(analysis.created_at).toLocaleString('ja-JP')}</p>
+                                </div>
+                                <div class="analysis-buttons">
+                                    <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">
+                                        👁️ 詳細を見る
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id}')">
+                                        🗑️ 削除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = '<p>保存済みの分析結果はありません</p>';
+                }
+                
+            } catch (error) {
+                console.error('保存済み分析の読み込みエラー:', error);
+                document.getElementById('saved-analyses-list').innerHTML = 
+                    '<p style="color: red;">読み込みに失敗しました</p>';
+            }
+        }
+        
+        // 保存済み分析の詳細を表示
+        async function viewSavedAnalysis(analysisId) {
+            try {
+                const result = await getSavedAnalyses();
+                const analysis = result.analyses.find(a => a.analysis_id === analysisId);
+                
+                if (analysis) {
+                    // モーダルに詳細を表示
+                    const modal = document.getElementById('analysisModal');
+                    const modalContent = document.getElementById('modal-analysis-content');
+                    
+                    modalContent.innerHTML = `
+                        <div class="info-item">
+                            <span class="info-label">研究者名:</span> ${analysis.researcher_name}
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">所属:</span> ${analysis.affiliation || 'N/A'}
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">ResearchMap URL:</span> 
+                            <a href="${analysis.researchmap_url}" target="_blank">${analysis.researchmap_url}</a>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">検索クエリ:</span> ${analysis.query}
+                        </div>
+                        <hr style="margin: 20px 0;">
+                    `;
+                    
+                    // 分析結果を表示
+                    const tempDiv = document.createElement('div');
+                    displayAnalysisResult(analysis.analysis_result);
+                    tempDiv.innerHTML = document.getElementById('analysis-content').innerHTML;
+                    modalContent.appendChild(tempDiv);
+                    
+                    modal.style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('分析詳細の表示エラー:', error);
+                alert('詳細の表示に失敗しました');
+            }
+        }
+        
+        // 保存済み分析を削除
+        async function deleteSavedAnalysis(analysisId) {
+            if (!confirm('この分析結果を削除してもよろしいですか？')) {
+                return;
+            }
+            
+            try {
+                const result = await deleteAnalysis(analysisId);
+                
+                if (result.status === 'success') {
+                    alert('削除しました');
+                    await loadSavedAnalyses();
+                } else {
+                    alert('削除に失敗しました: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('削除エラー:', error);
+                alert('エラーが発生しました');
+            }
+        }
+    </script>
+</body>
+</html>
