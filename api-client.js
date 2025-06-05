@@ -127,7 +127,8 @@ class ResearcherSearchAPI {
                     method: method,
                     max_results: maxResults,
                     use_llm_expansion: useLLMExpansion,
-                    use_llm_summary: useLLMSummary
+                    use_llm_summary: useLLMSummary,
+                    young_researcher_filter: searchParams.youngResearcherFilter || false
                 }),
                 signal: AbortSignal.timeout(30000) // 30秒タイムアウト
             });

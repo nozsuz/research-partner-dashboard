@@ -519,6 +519,11 @@
                             <label for="llm-summary">🤖 AIによる200文字要約を追加</label>
                         </div>
                         
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="young-researcher-filter">
+                            <label for="young-researcher-filter">🌟 若手研究者のみ表示</label>
+                        </div>
+                        
                         <div class="form-group">
                             <label>最大表示件数: <span id="max-results-display">5</span></label>
                             <input type="range" id="max-results" min="1" max="20" value="5" class="form-control" oninput="document.getElementById('max-results-display').textContent = this.value">
@@ -933,6 +938,9 @@
                 </div>
             `;
             
+            // デバッグ：APIレスポンス全体を確認
+            console.log('🔍 APIレスポンス全体:', apiResponse);
+            
             // キーワード拡張情報の表示
             if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
                 const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
@@ -1106,11 +1114,20 @@
                 return;
             }
 
+            // 若手研究者数をカウント
+            let youngResearcherCount = 0;
+            apiResponse.results.forEach(researcher => {
+                if (researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1) {
+                    youngResearcherCount++;
+                }
+            });
+            
             // 成功メッセージ
             let html = `
                 <div class="alert alert-success">
                     「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
                     ${apiResponse.total}件見つかりました。
+                    ${youngResearcherCount > 0 ? `<span style="color: #ff6b6b; font-weight: bold;">🌟 若手研究者: ${youngResearcherCount}名</span>` : ''}
                     <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
                 </div>
             `;
@@ -1129,7 +1146,12 @@
             }
 
             // 研究者カードの生成
-            apiResponse.results.forEach((researcher) => {
+            apiResponse.results.forEach((researcher, index) => {
+                // 最初の研究者のデータ構造を確認
+                if (index === 0) {
+                    console.log('📦 最初の研究者データ:', researcher);
+                    console.log('🔑 データのキー:', Object.keys(researcher));
+                }
                 const name = researcher.name_ja || researcher.name_en || '名前不明';
                 const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
                 const keywords = researcher.research_keywords_ja || 'N/A';
@@ -1138,19 +1160,24 @@
                 const paper = researcher.paper_title_ja_first || 'N/A';
                 const project = researcher.project_title_ja_first || 'N/A';
                 const researchmapUrl = researcher.researchmap_url || '#';
-                const isYoungResearcher = researcher.is_young_researcher || false;
+                // 若手研究者判定の取得（大文字小文字の両方に対応）
+                const isYoungResearcher = researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1;
                 const youngReasons = researcher.young_researcher_reasons || [];
                 
-                // デバッグ用
-                if (name.includes('小松')) {
-                    console.log('🔍 小松氏のデータ:', {
-                        name,
-                        is_young_researcher: researcher.is_young_researcher,
-                        young_researcher_reasons: researcher.young_researcher_reasons,
-                        main_affiliation_job_ja: researcher.main_affiliation_job_ja,
-                        main_affiliation_job_title_ja: researcher.main_affiliation_job_title_ja
-                    });
+                // デバッグ: 若手研究者判定の詳細
+                if (isYoungResearcher) {
+                    console.log(`✅ ${name}は若手研究者です: ${youngReasons.join('、')}`);
                 }
+                
+                // デバッグ用: 全ての研究者の若手判定情報を表示
+                console.log(`🔍 ${apiResponse.method}検索 - ${name}の若手判定:`, {
+                    name,
+                    is_young_researcher: researcher.is_young_researcher,
+                    young_researcher_reasons: researcher.young_researcher_reasons,
+                    main_affiliation_job_ja: researcher.main_affiliation_job_ja,
+                    main_affiliation_job_title_ja: researcher.main_affiliation_job_title_ja,
+                    profile_ja_first_300: researcher.profile_ja ? researcher.profile_ja.substring(0, 300) : null
+                });
 
                 // スコア表示
                 let scoreText = '';
@@ -1214,6 +1241,7 @@
             const useLLMExpansion = document.getElementById('llm-expansion').checked;
             const useLLMSummary = document.getElementById('llm-summary').checked;  // AI要約の有効/無効
             const useInternalEvaluation = false;  // 内部評価モードは使用しない
+            const youngResearcherFilter = document.getElementById('young-researcher-filter').checked;  // 若手研究者フィルタ
 
             // 結果エリアをクリア
             const resultsContainer = document.getElementById('api-search-results');
@@ -1234,7 +1262,8 @@
                     maxResults: maxResults,
                     useLLMExpansion: useLLMExpansion,
                     useLLMSummary: useLLMSummary,
-                    useInternalEvaluation: useInternalEvaluation
+                    useInternalEvaluation: useInternalEvaluation,
+                    youngResearcherFilter: youngResearcherFilter
                 };
 
                 const apiResponse = await apiClient.searchResearchers(searchParams);
