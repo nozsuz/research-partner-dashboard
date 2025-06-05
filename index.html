@@ -258,6 +258,39 @@
             margin-bottom: 15px;
         }
         
+        .young-researcher-badge {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: 600;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+            }
+        }
+        
+        .young-researcher-info {
+            background: #fff5f5;
+            border-left: 4px solid #ff6b6b;
+            padding: 8px 12px;
+            margin: 10px 0;
+            font-size: 0.9em;
+            color: #c53030;
+        }
+        
         .alert {
             padding: 15px;
             border-radius: 8px;
@@ -979,10 +1012,17 @@
                     // デバッグ用ログ
                     console.log('評価結果:', result);
                     
+                    // 若手研究者判定（内部評価モードでも実施）
+                    const isYoungResearcher = result.is_young_researcher || false;
+                    const youngReasons = result.young_researcher_reasons || [];
+                    
                     html += `
                         <div class="researcher-card">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <div class="researcher-name">第${result.rank}位: ${result.name}</div>
+                                <div class="researcher-name">
+                                    第${result.rank}位: ${result.name}
+                                    ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
+                                </div>
                                 <div class="score-badge">総合スコア: ${result.score}/10</div>
                             </div>
                             
@@ -996,6 +1036,12 @@
                             <div class="ai-summary">
                                 <strong>AI関連性分析:</strong> ${result.summary}
                             </div>
+                            
+                            ${isYoungResearcher && youngReasons.length > 0 ? `
+                                <div class="young-researcher-info">
+                                    <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
+                                </div>
+                            ` : ''}
                             
                             ${result.strengths && result.strengths.length > 0 ? `
                                 <div class="researcher-info" style="margin-top: 10px;">
@@ -1092,6 +1138,8 @@
                 const paper = researcher.paper_title_ja_first || 'N/A';
                 const project = researcher.project_title_ja_first || 'N/A';
                 const researchmapUrl = researcher.researchmap_url || '#';
+                const isYoungResearcher = researcher.is_young_researcher || false;
+                const youngReasons = researcher.young_researcher_reasons || [];
 
                 // スコア表示
                 let scoreText = '';
@@ -1103,7 +1151,10 @@
 
                 html += `
                     <div class="researcher-card">
-                        <div class="researcher-name">${name} (${affiliation})${scoreText}</div>
+                        <div class="researcher-name">
+                            ${name} (${affiliation})${scoreText}
+                            ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
+                        </div>
                         
                         ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
                         ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
@@ -1114,6 +1165,12 @@
                         ${researcher.llm_summary ? `
                             <div class="ai-summary">
                                 <strong>🤖 AI要約:</strong> ${researcher.llm_summary}
+                            </div>
+                        ` : ''}
+                        
+                        ${isYoungResearcher && youngReasons.length > 0 ? `
+                            <div class="young-researcher-info">
+                                <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
                             </div>
                         ` : ''}
                         
