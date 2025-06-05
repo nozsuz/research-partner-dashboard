@@ -1140,6 +1140,17 @@
                 const researchmapUrl = researcher.researchmap_url || '#';
                 const isYoungResearcher = researcher.is_young_researcher || false;
                 const youngReasons = researcher.young_researcher_reasons || [];
+                
+                // デバッグ用
+                if (name.includes('小松')) {
+                    console.log('🔍 小松氏のデータ:', {
+                        name,
+                        is_young_researcher: researcher.is_young_researcher,
+                        young_researcher_reasons: researcher.young_researcher_reasons,
+                        main_affiliation_job_ja: researcher.main_affiliation_job_ja,
+                        main_affiliation_job_title_ja: researcher.main_affiliation_job_title_ja
+                    });
+                }
 
                 // スコア表示
                 let scoreText = '';
