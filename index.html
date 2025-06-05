@@ -1268,6 +1268,15 @@
 
                 const apiResponse = await apiClient.searchResearchers(searchParams);
                 
+                // デバッグ: APIレスポンスの詳細を確認
+                console.log('📦 APIレスポンス全体:', apiResponse);
+                if (apiResponse.results && apiResponse.results.length > 0) {
+                    console.log('🔍 最初の結果の詳細:', apiResponse.results[0]);
+                    console.log('🔑 最初の結果のキー:', Object.keys(apiResponse.results[0]));
+                    console.log('🌟 is_young_researcher:', apiResponse.results[0].is_young_researcher);
+                    console.log('📝 young_researcher_reasons:', apiResponse.results[0].young_researcher_reasons);
+                }
+                
                 // 結果表示
                 displayAPISearchResults(apiResponse);
 
