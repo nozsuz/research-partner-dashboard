@@ -128,7 +128,8 @@ class ResearcherSearchAPI {
                     max_results: maxResults,
                     use_llm_expansion: useLLMExpansion,
                     use_llm_summary: useLLMSummary,
-                    young_researcher_filter: searchParams.youngResearcherFilter || false
+                    young_researcher_filter: searchParams.youngResearcherFilter || false,
+                    university_filter: searchParams.universityFilter || null
                 }),
                 signal: AbortSignal.timeout(30000) // 30秒タイムアウト
             });

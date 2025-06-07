@@ -485,6 +485,20 @@
                     
                     <hr style="margin: 20px 0; border-color: #e9ecef;">
                     
+                    <!-- 大学フィルターセクション -->
+                    <div id="university-filter-section" style="margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 15px;">🏫 大学名でフィルタリング</h4>
+                        <div id="university-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; background: #f8f9fa;">
+                            <div class="loading" style="text-align: center; padding: 20px;">
+                                <div class="spinner"></div>
+                                大学リストを読み込み中...
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; text-align: right;">
+                            <button class="btn btn-secondary" onclick="clearUniversityFilter()" style="font-size: 14px;">フィルターをクリア</button>
+                        </div>
+                    </div>
+                    
                     <div class="search-options">
                         <h3 style="margin-bottom: 15px;">詳細検索オプション</h3>
                         
@@ -883,6 +897,10 @@
     <script>
         // api-client.jsで定義されたapiClientを使用
         
+        // 大学リストを保持
+        window.universityList = [];
+        window.selectedUniversities = [];
+        
         // 検索方法変更時の処理
         window.onSearchMethodChange = function() {
             const searchMethod = document.getElementById('search-method').value;
@@ -1250,7 +1268,8 @@
                     useLLMExpansion: useLLMExpansion,
                     useLLMSummary: useLLMSummary,
                     useInternalEvaluation: useInternalEvaluation,
-                    youngResearcherFilter: youngResearcherFilter
+                    youngResearcherFilter: youngResearcherFilter,
+                    universityFilter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
                 };
 
                 const apiResponse = await apiClient.searchResearchers(searchParams);
@@ -1280,6 +1299,91 @@
             }
         }
 
+        // 大学リストを取得
+        window.loadUniversityList = async function() {
+            try {
+                const response = await fetch(`${apiClient.baseURL}/api/universities`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.universities) {
+                    window.universityList = data.universities;
+                    displayUniversityList();
+                } else {
+                    console.error('大学リスト取得エラー:', data);
+                    document.getElementById('university-list-container').innerHTML = `
+                        <div class="alert alert-warning">
+                            大学リストの取得に失敗しました
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('大学リスト取得エラー:', error);
+                document.getElementById('university-list-container').innerHTML = `
+                    <div class="alert alert-warning">
+                        大学リストの取得に失敗しました
+                    </div>
+                `;
+            }
+        }
+        
+        // 大学リストを表示
+        window.displayUniversityList = function() {
+            const container = document.getElementById('university-list-container');
+            
+            if (window.universityList.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6c757d;">大学データがありません</p>';
+                return;
+            }
+            
+            // 上位20大学を表示
+            const topUniversities = window.universityList.slice(0, 20);
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">';
+            
+            topUniversities.forEach(univ => {
+                const isChecked = window.selectedUniversities.includes(univ.name);
+                html += `
+                    <div class="checkbox-group" style="margin-bottom: 5px;">
+                        <input type="checkbox" id="univ-${univ.name.replace(/[^\w\s]/gi, '')}" 
+                               value="${univ.name}" 
+                               ${isChecked ? 'checked' : ''}
+                               onchange="toggleUniversityFilter('${univ.name.replace(/'/g, "\\'")}')"
+                               style="margin-right: 8px;">
+                        <label for="univ-${univ.name.replace(/[^\w\s]/gi, '')}" style="margin-bottom: 0; cursor: pointer;">
+                            ${univ.name} <span style="color: #6c757d; font-size: 12px;">(${univ.count.toLocaleString()}名)</span>
+                        </label>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            if (window.universityList.length > 20) {
+                html += `<p style="text-align: center; color: #6c757d; margin-top: 10px; font-size: 14px;">
+                    他${window.universityList.length - 20}大学があります
+                </p>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // 大学フィルターの切り替え
+        window.toggleUniversityFilter = function(universityName) {
+            const index = window.selectedUniversities.indexOf(universityName);
+            if (index === -1) {
+                window.selectedUniversities.push(universityName);
+            } else {
+                window.selectedUniversities.splice(index, 1);
+            }
+            console.log('選択された大学:', window.selectedUniversities);
+        }
+        
+        // 大学フィルターをクリア
+        window.clearUniversityFilter = function() {
+            window.selectedUniversities = [];
+            displayUniversityList();
+        }
+        
         // ヘルスチェック関数
         window.checkAPIHealth = async function() {
             try {
@@ -1670,6 +1774,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 研究者検索ページでAPIヘルスチェックを実行
             checkAPIHealth();
+            
+            // 大学リストを取得
+            loadUniversityList();
             
             // 検索方法変更時のイベントリスナー追加
             const searchMethodSelect = document.getElementById('search-method');
