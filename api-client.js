@@ -9,16 +9,30 @@ class ResearcherSearchAPI {
                 ? 'http://localhost:8000' 
                 : 'https://researcher-search-app-production.up.railway.app');
         
-        console.log('API Base URL:', this.baseURL);
+        console.log('API Base URL (initial):', this.baseURL);
         console.log('Current hostname:', window.location.hostname);
+        console.log('Validated API URL available:', typeof validatedApiUrl !== 'undefined' ? validatedApiUrl : 'Not yet validated');
+    }
+    
+    // 現在の有効なAPI URLを取得
+    getCurrentApiUrl() {
+        // validatedApiUrlが存在する場合はそれを使用
+        if (typeof validatedApiUrl !== 'undefined' && validatedApiUrl) {
+            return validatedApiUrl;
+        }
+        // そうでなければAPI_CONFIGから取得
+        return (typeof API_CONFIG !== 'undefined' && API_CONFIG.baseURL) 
+            ? API_CONFIG.baseURL 
+            : this.baseURL;
     }
 
     // ヘルスチェック（改良版）
     async healthCheck() {
         try {
-            console.log('ヘルスチェック開始:', `${this.baseURL}/health`);
+            const apiUrl = this.getCurrentApiUrl();
+            console.log('ヘルスチェック開始:', `${apiUrl}/health`);
             
-            const response = await fetch(`${this.baseURL}/health`, {
+            const response = await fetch(`${apiUrl}/health`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -51,7 +65,7 @@ class ResearcherSearchAPI {
             return { 
                 status: 'error', 
                 message: errorMessage,
-                url: `${this.baseURL}/health`,
+                url: `${this.getCurrentApiUrl()}/health`,
                 timestamp: new Date().toISOString()
             };
         }
@@ -60,9 +74,10 @@ class ResearcherSearchAPI {
     // 簡易接続テスト
     async simpleConnectionTest() {
         try {
-            console.log('簡易接続テスト開始:', `${this.baseURL}/`);
+            const apiUrl = this.getCurrentApiUrl();
+            console.log('簡易接続テスト開始:', `${apiUrl}/`);
             
-            const response = await fetch(`${this.baseURL}/`, {
+            const response = await fetch(`${apiUrl}/`, {
                 method: 'GET',
                 mode: 'cors', // CORS を明示的に指定
                 headers: {
@@ -112,11 +127,12 @@ class ResearcherSearchAPI {
                 useLLMSummary = false
             } = searchParams;
 
+            const apiUrl = this.getCurrentApiUrl();
             console.log('API検索開始:', searchParams);
-            console.log('リクエストURL:', `${this.baseURL}/api/search`);
+            console.log('リクエストURL:', `${apiUrl}/api/search`);
 
             // POSTリクエストでAPIを呼び出し
-            const response = await fetch(`${this.baseURL}/api/search`, {
+            const response = await fetch(`${apiUrl}/api/search`, {
                 method: 'POST',
                 mode: 'cors',
                 headers: {
@@ -184,9 +200,10 @@ class ResearcherSearchAPI {
                 use_llm_summary: useLLMSummary.toString()
             });
 
-            console.log('GET検索開始:', `${this.baseURL}/api/search?${params}`);
+            const apiUrl = this.getCurrentApiUrl();
+            console.log('GET検索開始:', `${apiUrl}/api/search?${params}`);
 
-            const response = await fetch(`${this.baseURL}/api/search?${params}`, {
+            const response = await fetch(`${apiUrl}/api/search?${params}`, {
                 method: 'GET',
                 mode: 'cors',
                 headers: {
@@ -234,7 +251,8 @@ function getOrCreateSessionId() {
 // 分析結果を保存
 async function saveAnalysis(analysisData) {
     try {
-        const response = await fetch(`${apiClient.baseURL}/api/save-analysis`, {
+        const apiUrl = apiClient.getCurrentApiUrl();
+        const response = await fetch(`${apiUrl}/api/save-analysis`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -262,7 +280,8 @@ async function saveAnalysis(analysisData) {
 // 保存済み分析を取得
 async function getSavedAnalyses(query = null) {
     try {
-        const response = await fetch(`${apiClient.baseURL}/api/get-saved-analyses`, {
+        const apiUrl = apiClient.getCurrentApiUrl();
+        const response = await fetch(`${apiUrl}/api/get-saved-analyses`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -291,8 +310,9 @@ async function getSavedAnalyses(query = null) {
 async function deleteAnalysis(analysisId) {
     try {
         const sessionId = getOrCreateSessionId();
+        const apiUrl = apiClient.getCurrentApiUrl();
         const response = await fetch(
-            `${apiClient.baseURL}/api/delete-analysis/${analysisId}?session_id=${sessionId}`,
+            `${apiUrl}/api/delete-analysis/${analysisId}?session_id=${sessionId}`,
             {
                 method: 'DELETE'
             }
@@ -376,7 +396,7 @@ async function performConnectionDiagnostic() {
                 </tbody>
             </table>
             <hr>
-            <p><strong>API URL:</strong> ${apiClient.baseURL}</p>
+            <p><strong>API URL:</strong> ${apiClient.getCurrentApiUrl()}</p>
             <p><strong>実行時刻:</strong> ${new Date().toLocaleString()}</p>
         </div>
     `;
@@ -492,5 +512,14 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleAPISearchMode('api');
     
     console.log('改良版APIクライアント初期化完了');
-    console.log('現在のAPI URL:', apiClient.baseURL);
+    console.log('現在のAPI URL:', apiClient.getCurrentApiUrl());
+    
+    // API URL検証状況をログ出力
+    setTimeout(() => {
+        if (typeof validatedApiUrl !== 'undefined' && validatedApiUrl) {
+            console.log('✅ API URL検証完了:', validatedApiUrl);
+        } else {
+            console.log('⚠️ API URL未検証 - デフォルトURLを使用:', apiClient.getCurrentApiUrl());
+        }
+    }, 2000);
 });

@@ -1302,25 +1302,69 @@
         // 大学リストを取得
         window.loadUniversityList = async function() {
             try {
-                const response = await fetch(`${apiClient.baseURL}/api/universities`);
+                console.log('🏫 大学リスト取得開始');
+                const apiUrl = apiClient.getCurrentApiUrl();
+                console.log('取得URL:', `${apiUrl}/api/universities`);
+                
+                const response = await fetch(`${apiUrl}/api/universities`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    signal: AbortSignal.timeout(15000) // 15秒タイムアウト
+                });
+                
+                console.log('大学リストレスポンス:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('大学リストデータ:', data);
                 
                 if (data.status === 'success' && data.universities) {
                     window.universityList = data.universities;
                     displayUniversityList();
-                } else {
-                    console.error('大学リスト取得エラー:', data);
-                    document.getElementById('university-list-container').innerHTML = `
-                        <div class="alert alert-warning">
-                            大学リストの取得に失敗しました
+                    console.log('✅ 大学リスト取得成功:', data.universities.length, '校');
+                } else if (data.status === 'fallback' && data.universities) {
+                    // フォールバックモードでも表示
+                    window.universityList = data.universities;
+                    displayUniversityList();
+                    console.log('⚠️ 大学リスト（フォールバックモード）:', data.universities.length, '校');
+                    
+                    // フォールバック情報を表示
+                    const container = document.getElementById('university-list-container');
+                    container.insertAdjacentHTML('afterbegin', `
+                        <div class="alert alert-warning" style="margin-bottom: 10px; font-size: 12px; padding: 8px;">
+                            ⚠️ テストデータを表示中（${data.fallback_info?.reason || '不明'}）
                         </div>
-                    `;
+                    `);
+                } else {
+                    throw new Error('有効な大学データが取得できませんでした');
                 }
             } catch (error) {
-                console.error('大学リスト取得エラー:', error);
+                console.error('🔴 大学リスト取得エラー:', error);
+                
+                // エラータイプに応じたメッセージ
+                let errorMessage = 'データベースに接続できません';
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = 'APIサーバーに接続できません';
+                } else if (error.name === 'TimeoutError') {
+                    errorMessage = 'サーバーの応答に時間がかかりすぎています';
+                } else if (error.message.includes('HTTP')) {
+                    errorMessage = `サーバーエラー: ${error.message}`;
+                }
+                
                 document.getElementById('university-list-container').innerHTML = `
                     <div class="alert alert-warning">
-                        大学リストの取得に失敗しました
+                        <strong>🔴 大学リスト取得エラー</strong><br>
+                        ${errorMessage}<br>
+                        <small>バックエンドサーバーが起動しているか確認してください。</small>
+                        <hr style="margin: 10px 0;">
+                        <button class="btn btn-secondary" onclick="loadUniversityList()" style="width: 100%; font-size: 12px;">
+                            🔄 再試行
+                        </button>
                     </div>
                 `;
             }
