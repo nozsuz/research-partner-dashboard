@@ -179,7 +179,11 @@ if (typeof window.ProjectManager === 'undefined') {
         async sendMatchingRequest(projectId, message, priority = 'normal') {
             if (this.useAPI && window.apiClient) {
                 try {
-                    const result = await window.apiClient.submitMatchingRequest(projectId, message, priority);
+                    const result = await window.apiClient.submitMatchingRequest(projectId, {
+                        message: message,
+                        priority: priority,
+                        request_to_consultant: false
+                    });
                     
                     if (result.status === 'success') {
                         console.log('✅ API経由でマッチング依頼送信成功:', result);
@@ -195,7 +199,8 @@ if (typeof window.ProjectManager === 'undefined') {
             return { 
                 status: 'success', 
                 message: 'マッチング依頼を送信しました（ローカル保存）',
-                fallback: true
+                fallback: true,
+                request_type: 'direct'
             };
         }
 
@@ -294,6 +299,89 @@ if (typeof window.ProjectManager === 'undefined') {
             }
             
             return false;
+        }
+
+        // 研究者のメモを更新（API統合版）
+        async updateResearcherMemo(projectId, researcherName, memo) {
+            if (this.useAPI && window.apiClient) {
+                try {
+                    const result = await window.apiClient.updateResearcherMemo(projectId, researcherName, memo);
+                    
+                    if (result.status === 'success') {
+                        console.log('✅ API経由で研究者メモ更新成功:', researcherName);
+                        return true;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ API経由のメモ更新失敗、ローカルにフォールバック:', error);
+                }
+            }
+
+            // フォールバック：ローカル処理
+            return this.updateResearcherMemoLocal(projectId, researcherName, memo);
+        }
+
+        // ローカルメモ更新
+        updateResearcherMemoLocal(projectId, researcherName, memo) {
+            const tempProjects = this.getTempProjectsLocal();
+            const project = tempProjects.find(p => p.id === projectId);
+            
+            if (project && project.selected_researchers) {
+                const researcher = project.selected_researchers.find(r => r.name === researcherName);
+                if (researcher) {
+                    researcher.memo = memo;
+                    researcher.memo_updated_at = new Date().toISOString();
+                    project.updated_at = new Date().toISOString();
+                    localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // コンサルタントへのマッチング依頼を送信（API統合版）
+        async sendMatchingRequestToConsultant(projectId, message, consultantRequirements, priority = 'normal') {
+            if (this.useAPI && window.apiClient) {
+                try {
+                    const result = await window.apiClient.submitMatchingRequest(projectId, {
+                        message: message,
+                        priority: priority,
+                        request_to_consultant: true,
+                        consultant_requirements: consultantRequirements
+                    });
+                    
+                    if (result.status === 'success') {
+                        console.log('✅ API経由でコンサルタントへのマッチング依頼送信成功:', result);
+                        return { status: 'success', data: result };
+                    }
+                } catch (error) {
+                    console.warn('⚠️ API経由のコンサルタント送信失敗、ローカルにフォールバック:', error);
+                }
+            }
+
+            // フォールバック：ローカル処理
+            this.updateProjectStatusLocal(projectId, 'matching_requested');
+            
+            // コンサルタント依頼情報をローカルに保存
+            const tempProjects = this.getTempProjectsLocal();
+            const project = tempProjects.find(p => p.id === projectId);
+            if (project) {
+                project.consultant_request = {
+                    message: message,
+                    requirements: consultantRequirements,
+                    priority: priority,
+                    requested_at: new Date().toISOString(),
+                    type: 'consultant'
+                };
+                localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+            }
+            
+            return { 
+                status: 'success', 
+                message: 'コンサルタントへのマッチング依頼を送信しました（ローカル保存）',
+                fallback: true,
+                request_type: 'consultant'
+            };
         }
 
         // 仮プロジェクトを削除（API統合版）

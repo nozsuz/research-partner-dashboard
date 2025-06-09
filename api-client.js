@@ -382,20 +382,33 @@ class ResearcherSearchAPI {
     /**
      * マッチング依頼を送信
      */
-    async submitMatchingRequest(projectId, message, priority = 'normal') {
+    async submitMatchingRequest(projectId, requestData) {
         try {
-            const requestData = {
-                project_id: projectId,
-                message: message,
-                priority: priority
-            };
+            // requestDataが文字列の場合は古い形式で互換性を保つ
+            let payload;
+            if (typeof requestData === 'string') {
+                payload = {
+                    project_id: projectId,
+                    message: requestData,
+                    priority: 'normal',
+                    request_to_consultant: false
+                };
+            } else {
+                payload = {
+                    project_id: projectId,
+                    message: requestData.message,
+                    priority: requestData.priority || 'normal',
+                    request_to_consultant: requestData.request_to_consultant || false,
+                    consultant_requirements: requestData.consultant_requirements || null
+                };
+            }
 
             const response = await fetch(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}/matching-request`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData),
+                body: JSON.stringify(payload),
                 signal: AbortSignal.timeout(20000)
             });
 
@@ -435,6 +448,60 @@ class ResearcherSearchAPI {
 
         } catch (error) {
             console.error('ステータス更新エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 研究者のメモを更新
+     */
+    async updateResearcherMemo(projectId, researcherName, memo) {
+        try {
+            const encodedName = encodeURIComponent(researcherName);
+            const url = new URL(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}/researchers/${encodedName}/memo`);
+            url.searchParams.append('memo', memo);
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(10000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('研究者メモ更新エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 仮プロジェクトを削除
+     */
+    async deleteTempProject(projectId) {
+        try {
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(10000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('仮プロジェクト削除エラー:', error);
             throw error;
         }
     }

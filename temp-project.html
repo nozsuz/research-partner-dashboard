@@ -226,6 +226,15 @@
             background: #c82333;
         }
         
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
         .researcher-card {
             background: white;
             border: 1px solid #e9ecef;
@@ -246,6 +255,53 @@
             margin-bottom: 8px;
             line-height: 1.6;
             color: #666;
+        }
+        
+        .memo-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .memo-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-style: italic;
+            color: #666;
+            min-height: 40px;
+        }
+        
+        .memo-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .memo-empty {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .request-type-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .consultant-requirements {
+            margin-top: 15px;
+        }
+        
+        .consultant-requirements.show {
+            display: block;
         }
         
         .alert {
@@ -343,7 +399,7 @@
         <div class="tabs">
             <div class="tab active" onclick="showTab('overview')">📊 概要</div>
             <div class="tab" onclick="showTab('researchers')">👨‍🔬 研究者選択</div>
-            <div class="tab" onclick="showTab('matching')">🤝 マッチング依頼</div>
+            <div class="tab" onclick="showTab('matching')">👨‍💼 コンサルタント依頼</div>
         </div>
 
         <!-- 概要タブ -->
@@ -372,35 +428,75 @@
             </div>
         </div>
 
-        <!-- マッチング依頼タブ -->
+        <!-- コンサルタント依頼タブ -->
         <div id="matching-tab" class="tab-content">
             <div class="matching-section">
-                <h3>📤 マッチング依頼送信</h3>
-                <p>選択した研究者候補にマッチング依頼を送信します。</p>
+                <h3>👨‍💼 専門コンサルタントへの依頼</h3>
+                <p>専門コンサルタントが、プロジェクトに最適な研究者をマッチングいたします。</p>
 
                 <div id="matching-prerequisites">
                     <!-- 前提条件チェック -->
                 </div>
 
-                <div class="form-group">
-                    <label for="matching-message">依頼メッセージ</label>
-                    <textarea id="matching-message" class="form-control" rows="8" 
-                             placeholder="研究者への依頼内容を記載してください...
+                <!-- コンサルタント依頼セクション -->
+                <div class="request-type-section">
+                    <h4>👨‍💼 専門コンサルタントへの依頼</h4>
+                    <p style="color: #666; margin-bottom: 15px;">専門コンサルタントが、プロジェクトに最適な研究者をマッチングいたします。</p>
+                    
+                    <!-- 隠しラジオボタン（コンサルタント依頼固定） -->
+                    <input type="radio" name="request-type" value="consultant" checked style="display: none;">
+                    
+                    <div class="alert alert-info">
+                        📋 <strong>コンサルタントサービスの特徴</strong>
+                        <ul style="margin-top: 10px; margin-left: 20px; margin-bottom: 10px;">
+                            <li>プロジェクトの要件に基づいた最適な研究者の選定</li>
+                            <li>研究者との交渉・契約手続きの代行</li>
+                            <li>プロジェクト進行中のサポート</li>
+                            <li>専門分野に精通したコンサルタントによる品質保証</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="consultant-requirements" class="consultant-requirements show">
+                        <label for="consultant-requirements-text">コンサルタントへの要求事項 <span style="color: #dc3545;">*</span></label>
+                        <textarea id="consultant-requirements-text" class="form-control" rows="5" 
+                                 placeholder="コンサルタントに求める具体的な要件を記載してください...
 
 例：
-ご担当者様
+・特定の研究分野に精通した研究者を希望
+・産業界での実務経験がある研究者を優先
+・国際的な研究ネットワークを持つ研究者
+・プロジェクト期間中のフルタイム参加が可能な研究者
+・特定の技術や手法に関する専門知識を持つ研究者
+・過去に類似プロジェクトでの成功実績がある研究者"></textarea>
+                    </div>
+                </div>
 
-貴殿の○○分野での優れた研究実績を拝見し、弊社プロジェクトにおいて是非ご協力をお願いしたく、ご連絡いたします。
+                <div class="form-group">
+                    <label for="matching-message">プロジェクト概要・依頼内容</label>
+                    <textarea id="matching-message" class="form-control" rows="8" 
+                             placeholder="プロジェクトの詳細と協力依頼内容を記載してください...
 
-【プロジェクト概要】
+例：
+【プロジェクト背景】
+弊社では○○分野における新技術開発プロジェクトを企画しており、専門的な知見を持つ研究者との協力を求めています。
+
+【プロジェクト詳細】
 - プロジェクト名：（自動入力）
-- 期間：（自動入力）
-- 予算：（自動入力）
+- 実施期間：（自動入力）
+- 予算規模：（自動入力）
+- 研究テーマ：具体的な研究内容...
 
-【ご依頼内容】
-具体的な協力内容をここに記載...
+【求める協力内容】
+・研究計画の策定と実行
+・技術的なアドバイスと指導
+・研究成果の評価と検証
+・必要に応じた追加研究の提案
 
-ご検討のほど、よろしくお願いいたします。"></textarea>
+【期待する成果】
+具体的な成果物や目標を記載...
+
+【その他】
+特記事項があれば記載してください。"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -414,7 +510,7 @@
 
                 <div class="form-actions">
                     <button id="send-matching-btn" class="btn btn-primary" onclick="sendMatchingRequest()">
-                        📤 マッチング依頼を送信
+                        👨‍💼 コンサルタントに依頼を送信
                     </button>
                 </div>
 
@@ -584,6 +680,11 @@
                          analysisData.analysis_result.total_papers !== undefined);
                     const totalScore = analysisData && analysisData.relevance_score ? analysisData.relevance_score : null;
                     
+                    // メモの表示
+                    const memo = researcher.memo || '';
+                    const memoDisplay = memo ? memo : 'メモが未記入です。研究者に関するメモを追加できます。';
+                    const memoClass = memo ? '' : 'memo-empty';
+                    
                     html += `
                         <div class="researcher-card" style="border-left: 4px solid ${hasDetailedAnalysis ? '#4caf50' : '#ddd'};">
                             <div class="researcher-name" style="display: flex; justify-content: space-between; align-items: center;">
@@ -597,6 +698,28 @@
                             <div class="researcher-info">検索クエリ: ${researcher.query || '「不明」'}</div>
                             <div class="researcher-info" style="color: #666; font-size: 14px;">
                                 保存日時: ${new Date(researcher.added_at).toLocaleString('ja-JP')}
+                            </div>
+                            
+                            <!-- メモセクション -->
+                            <div class="memo-section">
+                                <h5>📝 研究者メモ</h5>
+                                <div id="memo-display-${index}" class="memo-display ${memoClass}">
+                                    ${memoDisplay}
+                                </div>
+                                <div id="memo-edit-${index}" style="display: none;">
+                                    <textarea id="memo-input-${index}" class="memo-input" placeholder="研究者に関するメモを入力してください...">${memo}</textarea>
+                                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                                        <button class="btn btn-success" onclick="saveMemo('${researcher.name.replace(/'/g, "\\'")}', ${index})">
+                                            ✅ 保存
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="cancelMemoEdit(${index})">
+                                            ❌ キャンセル
+                                        </button>
+                                    </div>
+                                </div>
+                                <button id="memo-edit-btn-${index}" class="btn btn-secondary" onclick="editMemo(${index})" style="margin-top: 10px;">
+                                    📝 メモを編集
+                                </button>
                             </div>
                             
                             <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -615,8 +738,7 @@
                                         🔗 ResearchMap
                                     </a>
                                 ` : ''}
-                                <button class="btn btn-danger" onclick="removeResearcher('${researcher.name.replace(/'/g, "\\'")}')"
-                                        style="margin-left: auto;">
+                                <button class="btn btn-danger" onclick="removeResearcher('${researcher.name.replace(/'/g, "\\'")}')" style="margin-left: auto;">
                                     ❌ 削除
                                 </button>
                             </div>
@@ -629,6 +751,48 @@
             } catch (error) {
                 console.error('選択済み研究者読み込みエラー:', error);
                 listContainer.innerHTML = '<div class="alert alert-warning">選択済み研究者の読み込みに失敗しました</div>';
+            }
+        }
+
+        // メモ編集関数
+        function editMemo(index) {
+            document.getElementById(`memo-display-${index}`).style.display = 'none';
+            document.getElementById(`memo-edit-${index}`).style.display = 'block';
+            document.getElementById(`memo-edit-btn-${index}`).style.display = 'none';
+        }
+
+        function cancelMemoEdit(index) {
+            document.getElementById(`memo-display-${index}`).style.display = 'block';
+            document.getElementById(`memo-edit-${index}`).style.display = 'none';
+            document.getElementById(`memo-edit-btn-${index}`).style.display = 'block';
+        }
+
+        async function saveMemo(researcherName, index) {
+            const memoInput = document.getElementById(`memo-input-${index}`);
+            const memo = memoInput.value.trim();
+            
+            try {
+                const success = await window.projectManager.updateResearcherMemo(currentProjectId, researcherName, memo);
+                
+                if (success) {
+                    // 表示を更新
+                    const memoDisplay = document.getElementById(`memo-display-${index}`);
+                    if (memo) {
+                        memoDisplay.textContent = memo;
+                        memoDisplay.classList.remove('memo-empty');
+                    } else {
+                        memoDisplay.textContent = 'メモが未記入です。研究者に関するメモを追加できます。';
+                        memoDisplay.classList.add('memo-empty');
+                    }
+                    
+                    cancelMemoEdit(index);
+                    alert('✅ メモを保存しました');
+                } else {
+                    alert('❌ メモの保存に失敗しました');
+                }
+            } catch (error) {
+                console.error('メモ保存エラー:', error);
+                alert('❌ メモ保存中にエラーが発生しました');
             }
         }
 
@@ -661,14 +825,14 @@
             if (researchers.length === 0) {
                 prerequisitesContainer.innerHTML = `
                     <div class="alert alert-warning">
-                        ⚠️ マッチング依頼を送信するには、まず研究者を選択してください。
+                        ⚠️ コンサルタント依頼を送信するには、まず研究者を選択してください。
                     </div>
                 `;
                 sendBtn.disabled = true;
             } else if (currentProject.status === 'matching_requested') {
                 prerequisitesContainer.innerHTML = `
                     <div class="alert alert-success">
-                        ✅ マッチング依頼は既に送信済みです。研究者からの返答をお待ちください。
+                        ✅ コンサルタントへの依頼は既に送信済みです。コンサルタントからの連絡をお待ちください。
                     </div>
                 `;
                 sendBtn.disabled = true;
@@ -676,7 +840,7 @@
             } else {
                 prerequisitesContainer.innerHTML = `
                     <div class="alert alert-info">
-                        📋 ${researchers.length}名の研究者が選択されています。マッチング依頼を送信できます。
+                        📋 ${researchers.length}名の研究者が選択されています。コンサルタントに依頼を送信できます。
                         <ul style="margin-top: 10px; margin-left: 20px;">
                             ${researchers.map(r => `<li>${r.name} (${r.affiliation})</li>`).join('')}
                         </ul>
@@ -696,28 +860,32 @@
             const researchers = currentProject.selected_researchers || [];
             
             if (researchers.length > 0) {
-                const template = `ご担当者様
+                const template = `【プロジェクト背景】
+弊社では${currentProject.name}における専門的な研究協力を求めており、最適な研究者との連携を希望しています。
 
-貴殿の専門分野での優れた研究実績を拝見し、弊社の以下プロジェクトにおいて是非ご協力をお願いしたく、ご連絡いたします。
-
-【プロジェクト概要】
+【プロジェクト詳細】
 - プロジェクト名：${currentProject.name}
-- 期間：${currentProject.duration ? `${currentProject.duration}ヶ月` : '未定'}
-- 予算：${currentProject.budget ? `${currentProject.budget}万円` : '要相談'}
-- 概要：${currentProject.description}
+- 実施期間：${currentProject.duration ? `${currentProject.duration}ヶ月` : '要相談'}
+- 予算規模：${currentProject.budget ? `${currentProject.budget}万円` : '要相談'}
+- プロジェクト概要：${currentProject.description}
 
 【研究者要件】
 ${currentProject.requirements || '特になし'}
 
-【ご依頼内容】
-具体的な協力内容や期待する成果をここに記載してください...
+【関連キーワード】
+${currentProject.keywords || '未設定'}
 
-【連絡先】
-担当者：[お名前]
-メール：[メールアドレス]
-電話：[電話番号]
+【求める協力内容】
+・研究計画の策定と実行
+・技術的なアドバイスと指導
+・研究成果の評価と検証
+・必要に応じた追加研究の提案
 
-ご検討のほど、よろしくお願いいたします。`;
+【期待する成果】
+具体的な成果物や目標をここに記載してください...
+
+【その他】
+特記事項があれば記載してください。`;
                 
                 if (!messageTextarea.value.trim()) {
                     messageTextarea.value = template;
@@ -728,9 +896,15 @@ ${currentProject.requirements || '特になし'}
         async function sendMatchingRequest() {
             const message = document.getElementById('matching-message').value.trim();
             const priority = document.getElementById('matching-priority').value;
+            const consultantRequirements = document.getElementById('consultant-requirements-text').value.trim();
             
             if (!message) {
-                alert('依頼メッセージを入力してください');
+                alert('プロジェクト概要・依頼内容を入力してください');
+                return;
+            }
+            
+            if (!consultantRequirements) {
+                alert('コンサルタントへの要求事項を入力してください');
                 return;
             }
 
@@ -741,16 +915,22 @@ ${currentProject.requirements || '特になし'}
             sendBtn.disabled = true;
             sendBtn.innerHTML = '📤 送信中...';
             
-            statusContainer.innerHTML = '<div class="loading"><div class="spinner"></div>マッチング依頼を送信中...</div>';
+            statusContainer.innerHTML = '<div class="loading"><div class="spinner"></div>コンサルタントへの依頼を送信中...</div>';
 
             try {
-                const result = await window.projectManager.sendMatchingRequest(currentProjectId, message, priority);
+                // コンサルタントに依頼（固定）
+                const result = await window.projectManager.sendMatchingRequestToConsultant(
+                    currentProjectId, 
+                    message, 
+                    consultantRequirements, 
+                    priority
+                );
                 
                 if (result.status === 'success') {
                     statusContainer.innerHTML = `
                         <div class="alert alert-success">
-                            ✅ マッチング依頼を送信しました！<br>
-                            研究者からの返答をお待ちください。
+                            ✅ 専門コンサルタントへの依頼を送信しました！<br>
+                            コンサルタントからの連絡をお待ちください。最適な研究者をマッチングいたします。
                             ${result.fallback ? '<br><small>※ ローカルに保存されました</small>' : ''}
                         </div>
                     `;
@@ -758,11 +938,11 @@ ${currentProject.requirements || '特になし'}
                     // プロジェクト情報を再読み込み
                     loadProject();
                 } else {
-                    throw new Error(result.message || 'マッチング依頼の送信に失敗しました');
+                    throw new Error(result.message || 'コンサルタントへの依頼送信に失敗しました');
                 }
                 
             } catch (error) {
-                console.error('マッチング依頼エラー:', error);
+                console.error('コンサルタント依頼エラー:', error);
                 statusContainer.innerHTML = `
                     <div class="alert alert-danger">
                         ❌ 送信に失敗しました: ${error.message}
@@ -771,7 +951,7 @@ ${currentProject.requirements || '特になし'}
                 
                 // ボタンを元に戻す
                 sendBtn.disabled = false;
-                sendBtn.innerHTML = '📤 マッチング依頼を送信';
+                sendBtn.innerHTML = '👨‍💼 コンサルタントに依頼を送信';
             }
         }
 
