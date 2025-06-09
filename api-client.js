@@ -500,140 +500,6 @@ class ResearcherSearchAPI {
 // グローバルAPIクライアントインスタンス
 const apiClient = new ResearcherSearchAPI();
 
-// プロジェクト管理用ユーティリティ関数
-class ProjectManager {
-    constructor() {
-        this.currentProject = null;
-        this.selectedResearchers = [];
-        this.useAPI = true; // APIを使用するかフラグ
-    }
-
-    // 仮プロジェクトを作成（API統合版）
-    async createTempProject(projectData) {
-        if (this.useAPI) {
-            try {
-                // バックエンドAPIを使用
-                const result = await apiClient.createTempProject({
-                    name: projectData.name,
-                    description: projectData.description,
-                    budget: projectData.budget ? parseInt(projectData.budget) : null,
-                    duration: projectData.duration ? parseInt(projectData.duration) : null,
-                    requirements: projectData.requirements,
-                    keywords: projectData.keywords,
-                    user_id: this.getCurrentUserId()
-                });
-
-                console.log('✅ API経由で仮プロジェクト作成成功:', result);
-                return result;
-
-            } catch (error) {
-                console.warn('⚠️ API経由の作成失敗、ローカルにフォールバック:', error);
-                // フォールバック：ローカルストレージ
-                return this.createTempProjectLocal(projectData);
-            }
-        } else {
-            // ローカルストレージのみ
-            return this.createTempProjectLocal(projectData);
-        }
-    }
-
-    // ローカル作成（フォールバック）
-    createTempProjectLocal(projectData) {
-        const projectId = `TEMP_${Date.now()}`;
-        const tempProject = {
-            id: projectId,
-            name: projectData.name,
-            description: projectData.description,
-            budget: projectData.budget,
-            duration: projectData.duration,
-            requirements: projectData.requirements,
-            keywords: projectData.keywords,
-            status: 'draft',
-            created_at: new Date().toISOString(),
-            selected_researchers: []
-        };
-
-        // ローカルストレージに保存
-        const tempProjects = this.getTempProjectsLocal();
-        tempProjects.push(tempProject);
-        localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
-
-        return tempProject;
-    }
-
-    // 仮プロジェクト一覧を取得（API統合版）
-    async getTempProjects() {
-        if (this.useAPI) {
-            try {
-                const result = await apiClient.getTempProjects(this.getCurrentUserId());
-                
-                if (result.status === 'success') {
-                    console.log('✅ API経由で仮プロジェクト一覧取得成功:', result.projects.length, '件');
-                    return result.projects;
-                }
-            } catch (error) {
-                console.warn('⚠️ API経由の取得失敗、ローカルにフォールバック:', error);
-            }
-        }
-
-        // フォールバック：ローカルストレージ
-        return this.getTempProjectsLocal();
-    }
-
-    // ローカルプロジェクト一覧取得
-    getTempProjectsLocal() {
-        return JSON.parse(localStorage.getItem('tempProjects') || '[]');
-    }
-
-    // 特定プロジェクト取得（API統合版）
-    async getTempProject(projectId) {
-        if (this.useAPI) {
-            try {
-                const result = await apiClient.getTempProject(projectId);
-                
-                if (result.status === 'success') {
-                    console.log('✅ API経由でプロジェクト取得成功:', projectId);
-                    return result.project;
-                }
-            } catch (error) {
-                console.warn('⚠️ API経由の取得失敗、ローカルにフォールバック:', error);
-            }
-        }
-
-        // フォールバック：ローカルストレージ
-        const tempProjects = this.getTempProjectsLocal();
-        return tempProjects.find(p => p.id === projectId);
-    }
-
-    // 現在のユーザーIDを取得（セッション管理）
-    getCurrentUserId() {
-        // 簡易的なユーザーID（実際の認証システムでは適切に実装）
-        let userId = localStorage.getItem('current_user_id');
-        if (!userId) {
-            userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            localStorage.setItem('current_user_id', userId);
-        }
-        return userId;
-    }
-
-    // API使用可能性をチェック
-    async checkAPIAvailability() {
-        try {
-            const healthCheck = await apiClient.healthCheck();
-            this.useAPI = healthCheck.status === 'healthy';
-            console.log(`🔍 API可用性: ${this.useAPI ? 'Available' : 'Unavailable'}`);
-            return this.useAPI;
-        } catch (error) {
-            console.warn('⚠️ API利用不可、ローカルモードで動作:', error);
-            this.useAPI = false;
-            return false;
-        }
-    }
-}
-
-// グローバルプロジェクトマネージャーインスタンス
-const projectManager = new ProjectManager();
-
 // 仮プロジェクト作成フロー用関数
 function createNewProject() {
     // プロジェクト作成画面へ遷移
@@ -737,8 +603,6 @@ async function deleteAnalysis(analysisId) {
         throw error;
     }
 }
-
-// displayAPISearchResults関数とperformAPISearch関数はindex.html内で定義されているため、ここでは削除
 
 // 接続診断関数（新規追加）
 async function performConnectionDiagnostic() {
@@ -908,9 +772,10 @@ function showResearcherDetail(name) {
     alert(`${name}の詳細ページへ遷移します（API連携完了後に実装予定）`);
 }
 
-// プロジェクト候補追加（統合版）
+// プロジェクト候補追加
 function addToProjectCandidates(name, affiliation = '', url = '') {
-    const tempProjects = projectManager.getTempProjectsLocal();
+    // ローカルストレージから仮プロジェクト一覧を取得
+    const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
     
     if (tempProjects.length === 0) {
         alert('まず仮プロジェクトを作成してください。');
@@ -939,51 +804,6 @@ function addToProjectCandidates(name, affiliation = '', url = '') {
     }
 }
 
-// 研究者を仮プロジェクトに追加（API統合版）
-async function addResearcherToTempProject(projectId, researcher) {
-    try {
-        if (projectManager.useAPI) {
-            const result = await apiClient.addResearcherToProject(projectId, {
-                name: researcher.name,
-                affiliation: researcher.affiliation,
-                researchmap_url: researcher.url,
-                selection_reason: researcher.selection_reason || ''
-            });
-
-            if (result.status === 'success') {
-                console.log('✅ API経由で研究者追加成功:', researcher.name);
-                return true;
-            }
-        }
-        
-        // フォールバック：ローカルストレージ
-        const tempProjects = projectManager.getTempProjectsLocal();
-        const project = tempProjects.find(p => p.id === projectId);
-        
-        if (project) {
-            if (!project.selected_researchers) {
-                project.selected_researchers = [];
-            }
-            
-            // 重複チェック
-            const exists = project.selected_researchers.some(r => r.name === researcher.name);
-            if (!exists) {
-                project.selected_researchers.push({
-                    ...researcher,
-                    added_at: new Date().toISOString()
-                });
-                localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
-                return true;
-            }
-        }
-        return false;
-        
-    } catch (error) {
-        console.error('研究者追加エラー:', error);
-        return false;
-    }
-}
-
 // ページ読み込み時の初期化
 document.addEventListener('DOMContentLoaded', function() {
     // デフォルトでAPI検索を表示
@@ -991,11 +811,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('改良版APIクライアント初期化完了');
     console.log('現在のAPI URL:', apiClient.getCurrentApiUrl());
-    
-    // プロジェクトマネージャーAPI可用性チェック
-    if (typeof projectManager !== 'undefined') {
-        projectManager.checkAPIAvailability();
-    }
     
     // API URL検証状況をログ出力
     setTimeout(() => {
