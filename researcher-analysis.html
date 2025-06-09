@@ -305,6 +305,45 @@
         .close:focus {
             color: black;
         }
+        
+        /* プロジェクト選択モーダル用スタイル */
+        .project-select-item {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .project-select-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .project-select-item.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        }
+        
+        .project-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .project-description {
+            color: #495057;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -353,6 +392,9 @@
                 <button id="save-analysis-btn" class="btn btn-primary" onclick="saveCurrentAnalysis()">
                     💾 この分析結果を保存
                 </button>
+                <button id="add-current-to-project-btn" class="btn btn-primary" onclick="addCurrentAnalysisToProject()" style="display: none;">
+                    ➕ プロジェクトに追加
+                </button>
                 <span id="save-status"></span>
             </div>
         </div>
@@ -375,10 +417,61 @@
         </div>
     </div>
 
+    <!-- プロジェクト選択モーダル -->
+    <div id="project-select-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeProjectSelectModal()">&times;</span>
+            <h2>研究者を追加するプロジェクトを選択</h2>
+            
+            <!-- 新規プロジェクト作成オプション -->
+            <div style="
+                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                color: white;
+                text-align: center;
+                padding: 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin-bottom: 20px;
+                transition: all 0.3s ease;
+            " onclick="createNewProjectFromModal()">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 5px;">
+                    ➕ 新しいプロジェクトを作成
+                </div>
+                <div style="font-size: 14px; opacity: 0.9;">
+                    新しい仮プロジェクトを作成して研究者を追加
+                </div>
+            </div>
+            
+            <div id="project-list-container">
+                <!-- プロジェクト一覧がここに表示される -->
+            </div>
+            
+            <div style="
+                margin-top: 25px;
+                padding-top: 20px;
+                border-top: 2px solid #e9ecef;
+                display: flex;
+                gap: 15px;
+                justify-content: flex-end;
+            ">
+                <button class="btn btn-secondary" onclick="closeProjectSelectModal()">
+                    キャンセル
+                </button>
+                <button id="add-to-project-btn" class="btn btn-primary" onclick="addResearcherToSelectedProject()" disabled>
+                    選択したプロジェクトに追加
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="api-client.js"></script>
     <script>
         // グローバル変数で現在の分析結果を保持
         let currentAnalysisData = null;
+        
+        // プロジェクト選択モーダル関連のグローバル変数
+        let currentResearcher = null;
+        let selectedProjectId = null;
         
         // URLパラメータから初期値を設定
         document.addEventListener('DOMContentLoaded', function() {
@@ -386,6 +479,7 @@
             const researcherName = urlParams.get('name');
             const researchmapUrl = urlParams.get('url');
             const query = urlParams.get('query');
+            const analysisId = urlParams.get('id'); // 特定の分析結果を表示するためのID
             
             if (researcherName) {
                 document.getElementById('researcher-name').value = researcherName;
@@ -395,6 +489,11 @@
             }
             if (query) {
                 document.getElementById('analysis-query').value = query;
+            }
+            
+            // 特定の分析結果を表示
+            if (analysisId) {
+                viewSavedAnalysisFromUrl(analysisId);
             }
             
             // 保存済み分析を読み込み
@@ -415,6 +514,51 @@
             }
         });
         
+        // URLパラメータから特定の分析結果を表示
+        async function viewSavedAnalysisFromUrl(analysisId) {
+            try {
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysis = savedAnalyses.find(a => a.analysis_id === analysisId || a.id === analysisId);
+                
+                if (analysis) {
+                    // 分析結果を表示エリアに表示
+                    const resultContainer = document.getElementById('analysis-result-container');
+                    resultContainer.style.display = 'block';
+                    
+                    // 現在の分析データを設定
+                    currentAnalysisData = analysis;
+                    
+                    if (analysis.analysis_result) {
+                        displayAnalysisResult(analysis.analysis_result);
+                        
+                        // プロジェクト追加ボタンを表示
+                        document.getElementById('add-current-to-project-btn').style.display = 'inline-block';
+                        
+                        // 保存ボタンのテキストを変更
+                        const saveBtn = document.getElementById('save-analysis-btn');
+                        saveBtn.textContent = '✅ 保存済み';
+                        saveBtn.disabled = true;
+                    } else {
+                        document.getElementById('analysis-content').innerHTML = `
+                            <div class="alert alert-info">
+                                この分析結果には詳細データがありません。
+                            </div>
+                        `;
+                    }
+                    
+                    // フォームに情報を設定
+                    document.getElementById('researcher-name').value = analysis.researcher_name || '';
+                    document.getElementById('researchmap-url').value = analysis.researchmap_url || '';
+                    document.getElementById('analysis-query').value = analysis.query || '';
+                    
+                } else {
+                    alert('指定された分析結果が見つかりません');
+                }
+            } catch (error) {
+                console.error('URLからの分析結果表示エラー:', error);
+            }
+        }
+
         // AI分析を開始
         async function startAnalysis() {
             const researcherName = document.getElementById('researcher-name').value.trim();
@@ -477,6 +621,9 @@
                     
                     // 保存ボタンを有効化
                     document.getElementById('save-analysis-btn').disabled = false;
+                    
+                    // プロジェクト追加ボタンを表示
+                    document.getElementById('add-current-to-project-btn').style.display = 'inline-block';
                     
                 } else {
                     contentDiv.innerHTML = `
@@ -686,6 +833,9 @@
                                         <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">
                                             👁️ 詳細を見る
                                         </button>
+                                        <button class="btn btn-primary" onclick="addAnalysisToProject('${analysis.analysis_id}')">
+                                            ➕ プロジェクトに追加
+                                        </button>
                                         <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id}')">
                                             🗑️ 削除
                                         </button>
@@ -772,6 +922,198 @@
                 console.error('削除エラー:', error);
                 alert('エラーが発生しました');
             }
+        }
+        
+        // 現在の分析結果をプロジェクトに追加
+        function addCurrentAnalysisToProject() {
+            if (!currentAnalysisData) {
+                alert('分析結果がありません');
+                return;
+            }
+            
+            // 研究者情報を整理
+            currentResearcher = {
+                name: currentAnalysisData.researcher_name,
+                affiliation: currentAnalysisData.affiliation || '不明',
+                url: currentAnalysisData.researchmap_url || '',
+                query: currentAnalysisData.query || '',
+                analysis_score: currentAnalysisData.relevance_score,
+                has_analysis: true
+            };
+            
+            // プロジェクト選択モーダルを開く
+            openProjectSelectModal(currentResearcher);
+        }
+        
+        // 保存済み分析をプロジェクトに追加
+        function addAnalysisToProject(analysisId) {
+            try {
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+                
+                if (analysis) {
+                    // 研究者情報を整理
+                    currentResearcher = {
+                        name: analysis.researcher_name,
+                        affiliation: analysis.affiliation || '不明',
+                        url: analysis.researchmap_url || '',
+                        query: analysis.query || '',
+                        analysis_score: analysis.relevance_score,
+                        has_analysis: true
+                    };
+                    
+                    // プロジェクト選択モーダルを開く
+                    openProjectSelectModal(currentResearcher);
+                } else {
+                    alert('分析データが見つかりません');
+                }
+            } catch (error) {
+                console.error('プロジェクト追加エラー:', error);
+                alert('エラーが発生しました');
+            }
+        }
+        
+        // プロジェクト選択モーダルを開く
+        function openProjectSelectModal(researcher) {
+            currentResearcher = researcher;
+            selectedProjectId = null;
+            
+            // モーダルを表示
+            document.getElementById('project-select-modal').style.display = 'block';
+            
+            // プロジェクト一覧を読み込み
+            loadProjectList();
+            
+            // 追加ボタンを無効化
+            document.getElementById('add-to-project-btn').disabled = true;
+        }
+
+        // プロジェクト選択モーダルを閉じる
+        function closeProjectSelectModal() {
+            document.getElementById('project-select-modal').style.display = 'none';
+            currentResearcher = null;
+            selectedProjectId = null;
+        }
+
+        // プロジェクト一覧を読み込み
+        function loadProjectList() {
+            const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+            const container = document.getElementById('project-list-container');
+            
+            if (tempProjects.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #7f8c8d;">
+                        <p>仮プロジェクトがありません。</p>
+                        <p>上記から新しいプロジェクトを作成してください。</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            tempProjects.forEach(project => {
+                const researcherCount = (project.selected_researchers || []).length;
+                const statusText = project.status === 'matching_requested' ? '依頼送信済み' : '作成中';
+                
+                html += `
+                    <div class="project-select-item" onclick="selectProject('${project.id}')">
+                        <div class="project-name">${project.name}</div>
+                        <div class="project-meta">
+                            作成日: ${new Date(project.created_at).toLocaleDateString('ja-JP')} | 
+                            ステータス: ${statusText} | 
+                            研究者: ${researcherCount}名
+                        </div>
+                        <div class="project-description">
+                            ${project.description.substring(0, 100)}${project.description.length > 100 ? '...' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // プロジェクトを選択
+        function selectProject(projectId) {
+            // 前の選択をクリア
+            document.querySelectorAll('.project-select-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // 新しい選択を設定
+            event.target.closest('.project-select-item').classList.add('selected');
+            selectedProjectId = projectId;
+            
+            // 追加ボタンを有効化
+            document.getElementById('add-to-project-btn').disabled = false;
+        }
+
+        // 選択されたプロジェクトに研究者を追加
+        function addResearcherToSelectedProject() {
+            if (!currentResearcher || !selectedProjectId) {
+                alert('プロジェクトが選択されていません');
+                return;
+            }
+            
+            try {
+                // プロジェクトを取得
+                const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+                const project = tempProjects.find(p => p.id === selectedProjectId);
+                
+                if (!project) {
+                    alert('選択されたプロジェクトが見つかりません');
+                    return;
+                }
+                
+                // 研究者情報を整理
+                const researcherData = {
+                    name: currentResearcher.name,
+                    affiliation: currentResearcher.affiliation,
+                    url: currentResearcher.url || '',
+                    query: currentResearcher.query || '',
+                    added_at: new Date().toISOString(),
+                    analysis_score: currentResearcher.analysis_score,
+                    has_analysis: currentResearcher.has_analysis || false
+                };
+                
+                // 重複チェック
+                if (!project.selected_researchers) {
+                    project.selected_researchers = [];
+                }
+                
+                const exists = project.selected_researchers.some(r => r.name === researcherData.name);
+                if (exists) {
+                    alert('この研究者は既にプロジェクトに追加されています');
+                    return;
+                }
+                
+                // 研究者を追加
+                project.selected_researchers.push(researcherData);
+                project.updated_at = new Date().toISOString();
+                
+                // ローカルストレージに保存
+                localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+                
+                alert(`「${researcherData.name}」を「${project.name}」に追加しました`);
+                
+                // モーダルを閉じる
+                closeProjectSelectModal();
+                
+            } catch (error) {
+                console.error('研究者追加エラー:', error);
+                alert('研究者の追加に失敗しました: ' + error.message);
+            }
+        }
+
+        // モーダルから新規プロジェクト作成
+        function createNewProjectFromModal() {
+            // 研究者情報を一時保存
+            if (currentResearcher) {
+                sessionStorage.setItem('pendingResearcher', JSON.stringify(currentResearcher));
+            }
+            
+            // プロジェクト作成画面に遷移
+            window.location.href = 'project-create.html';
         }
     </script>
 </body>
