@@ -2072,21 +2072,38 @@
         }
 
         window.showPage = function(page) {
+            console.log('🔄 ページ切り替え:', page);
+            
             // すべてのページを非表示
             const pages = document.querySelectorAll('.page');
             pages.forEach(p => p.classList.add('hidden'));
             
             // 選択されたページを表示
-            document.getElementById(page + '-page').classList.remove('hidden');
+            const targetPage = document.getElementById(page + '-page');
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                console.log('✅ ページ表示:', page);
+            } else {
+                console.error('❌ ページが見つかりません:', page + '-page');
+            }
             
             // メニューアイテムのactive状態を更新
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(item => item.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             
-            // 研究者検索ページの場合はAPIヘルスチェックを実行
+            // 特定ページでの追加処理
             if (page === 'researchers') {
+                // 研究者検索ページの場合はAPIヘルスチェックを実行
                 checkAPIHealth();
+            } else if (page === 'projects') {
+                // プロジェクトページの場合は仮プロジェクト一覧を更新
+                console.log('📋 プロジェクトページ表示時に一覧を更新');
+                setTimeout(() => {
+                    loadTempProjects();
+                }, 100); // 少し遅延させてDOMが更新されるのを待つ
             }
         }
 
@@ -2175,22 +2192,34 @@
             
             // プロジェクトページ表示時に仮プロジェクトを読み込み
             if (document.getElementById('temp-projects-list')) {
+                console.log('📋 仮プロジェクト一覧の読み込みを開始');
                 loadTempProjects();
             }
         });
         
         // 仮プロジェクト一覧を読み込み
         function loadTempProjects() {
+            console.log('📋 loadTempProjects関数実行開始');
+            
             const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+            console.log('💾 ローカルストレージから取得したプロジェクト数:', tempProjects.length);
+            
             const listContainer = document.getElementById('temp-projects-list');
+            if (!listContainer) {
+                console.error('❌ temp-projects-listエレメントが見つかりません');
+                return;
+            }
             
             if (tempProjects.length === 0) {
+                console.log('📋 プロジェクトが0件のため、空のメッセージを表示');
                 listContainer.innerHTML = '<p style="color: #7f8c8d;">仮プロジェクトはありません。</p>';
                 return;
             }
             
             let html = '';
-            tempProjects.forEach(project => {
+            tempProjects.forEach((project, index) => {
+                console.log(`📋 プロジェクト${index + 1}: ${project.name}`);
+                
                 const statusText = project.status === 'matching_requested' ? '依頼送信済み' : '作成中';
                 const statusClass = project.status === 'matching_requested' ? 'status-completed' : 'status-planned';
                 
@@ -2218,7 +2247,9 @@
                 `;
             });
             
+            console.log('📋 生成されたHTMLの長さ:', html.length);
             listContainer.innerHTML = html;
+            console.log('✅ 仮プロジェクト一覧の表示完了');
         }
         
         // 保存済み分析の数を更新

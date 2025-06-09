@@ -5,7 +5,7 @@ if (typeof window.ProjectManager === 'undefined') {
         constructor() {
             this.currentProject = null;
             this.selectedResearchers = [];
-            this.useAPI = true; // APIを使用するかフラグ
+            this.useAPI = false; // 一時的にAPIを無効化してローカルストレージのみでテスト
         }
 
         // 仮プロジェクトを作成（API統合版）
@@ -40,6 +40,8 @@ if (typeof window.ProjectManager === 'undefined') {
         // ローカル作成（フォールバック）
         createTempProjectLocal(projectData) {
             try {
+                console.log('📋 ローカルプロジェクト作成開始:', projectData);
+                
                 // 入力データのバリデーション
                 if (!projectData || !projectData.name || !projectData.description) {
                     throw new Error('プロジェクト名と概要は必須です');
@@ -58,11 +60,20 @@ if (typeof window.ProjectManager === 'undefined') {
                     created_at: new Date().toISOString(),
                     selected_researchers: []
                 };
+                
+                console.log('📁 作成するプロジェクトデータ:', tempProject);
 
                 // ローカルストレージに保存
                 const tempProjects = this.getTempProjectsLocal();
+                console.log('💾 保存前のプロジェクト数:', tempProjects.length);
+                
                 tempProjects.push(tempProject);
                 localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+                
+                // 保存確認
+                const savedProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+                console.log('💾 保存後のプロジェクト数:', savedProjects.length);
+                console.log('💾 保存されたプロジェクト:', savedProjects[savedProjects.length - 1]);
 
                 console.log('✅ ローカルプロジェクト作成成功:', projectId);
                 return tempProject;
@@ -330,7 +341,7 @@ if (typeof window.ProjectManager === 'undefined') {
             if (!this.useAPI) return;
 
             try {
-                const localProjects = this                const localProjects = this.getTempProjectsLocal();
+                const localProjects = this.getTempProjectsLocal();
                 const apiProjects = await this.getTempProjects();
 
                 // 簡易的な同期ロジック（実際の実装ではもっと複雑になる）
