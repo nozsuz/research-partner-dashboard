@@ -770,8 +770,7 @@
                 const analysisData = {
                     ...currentAnalysisData,
                     analysis_id: analysisId,
-                    created_at: new Date().toISOString(),
-                    session_id: getOrCreateSessionId()
+                    created_at: new Date().toISOString()
                 };
                 
                 savedAnalyses.push(analysisData);
@@ -819,6 +818,12 @@
                     );
                     
                     listEl.innerHTML = sortedAnalyses.map(analysis => {
+                        // AI詳細分析が実行されているかチェック
+                        const hasDetailedAnalysis = analysis.analysis_result && 
+                            (analysis.analysis_result.detailed_analysis || 
+                             analysis.analysis_result.scores || 
+                             analysis.analysis_result.total_papers !== undefined);
+                        
                         return `
                             <div class="saved-analysis-item">
                                 <div class="analysis-header">
@@ -828,8 +833,14 @@
                                         <p>検索クエリ: 「${analysis.query}」</p>
                                         <p>総合評価スコア: ${analysis.relevance_score !== null && analysis.relevance_score !== undefined ? analysis.relevance_score + '/100' : 'N/A'}</p>
                                         <p>保存日時: ${new Date(analysis.created_at || analysis.saved_at).toLocaleString('ja-JP')}</p>
+                                        ${!hasDetailedAnalysis ? '<p style="color: #856404; font-weight: 600;">⚠️ AI詳細分析未実行</p>' : ''}
                                     </div>
                                     <div class="analysis-buttons">
+                                        ${!hasDetailedAnalysis ? `
+                                            <button class="btn btn-primary" onclick="runDetailedAnalysis('${analysis.analysis_id}')">
+                                                🤖 AI詳細分析を実行
+                                            </button>
+                                        ` : ''}
                                         <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">
                                             👁️ 詳細を見る
                                         </button>
@@ -1114,6 +1125,81 @@
             
             // プロジェクト作成画面に遷移
             window.location.href = 'project-create.html';
+        }
+        
+        // AI詳細分析を実行する関数
+        async function runDetailedAnalysis(analysisId) {
+            try {
+                // 保存済み分析を取得
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+                
+                if (!analysis) {
+                    alert('分析データが見つかりません');
+                    return;
+                }
+                
+                // 必要な情報があるかチェック
+                if (!analysis.researchmap_url || !analysis.query) {
+                    alert('AI詳細分析に必要な情報（ResearchMap URLまたは検索クエリ）が不足しています');
+                    return;
+                }
+                
+                // ボタンを無効化
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '🔄 分析実行中...';
+                
+                // API呼び出し
+                const response = await fetch(`${apiClient.baseURL}/api/analyze-researcher`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        researchmap_url: analysis.researchmap_url,
+                        query: analysis.query,
+                        researcher_basic_info: {
+                            name_ja: analysis.researcher_name
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.analysis) {
+                    // 分析結果を既存のデータに統合
+                    analysis.analysis_result = result.analysis;
+                    analysis.relevance_score = result.analysis.scores?.total || analysis.relevance_score;
+                    analysis.affiliation = result.analysis.affiliation || analysis.affiliation;
+                    analysis.updated_at = new Date().toISOString();
+                    
+                    // ローカルストレージに保存
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                    
+                    alert('✅ AI詳細分析が完了しました！');
+                    
+                    // 一覧を再読み込み
+                    await loadSavedAnalyses();
+                    
+                } else {
+                    throw new Error(result.error || 'AI詳細分析に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('AI詳細分析エラー:', error);
+                alert(`❌ AI詳細分析に失敗しました: ${error.message}`);
+                
+                // ボタンを元に戻す
+                const button = event.target;
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
         }
     </script>
 </body>

@@ -547,12 +547,6 @@
             return statusMap[status] || status;
         }
 
-
-
-
-
-
-
         async function loadSelectedResearchers() {
             const listContainer = document.getElementById('selected-researchers-list');
             
@@ -583,14 +577,21 @@
                         analysis.affiliation === researcher.affiliation
                     );
                     
-                    const hasAnalysis = analysisData && analysisData.has_detailed_analysis;
+                    // AI詳細分析が実行されているかチェック
+                    const hasDetailedAnalysis = analysisData && analysisData.analysis_result && 
+                        (analysisData.analysis_result.detailed_analysis || 
+                         analysisData.analysis_result.scores || 
+                         analysisData.analysis_result.total_papers !== undefined);
                     const totalScore = analysisData && analysisData.relevance_score ? analysisData.relevance_score : null;
                     
                     html += `
-                        <div class="researcher-card" style="border-left: 4px solid ${hasAnalysis ? '#4caf50' : '#ddd'};">
+                        <div class="researcher-card" style="border-left: 4px solid ${hasDetailedAnalysis ? '#4caf50' : '#ddd'};">
                             <div class="researcher-name" style="display: flex; justify-content: space-between; align-items: center;">
                                 <span>${researcher.name}</span>
-                                ${totalScore ? `<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px;">総合評価スコア: ${totalScore}/100</span>` : ''}
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    ${!hasDetailedAnalysis ? '<span style="background: #ffc107; color: #212529; padding: 4px 8px; border-radius: 8px; font-size: 12px;">AI分析未実行</span>' : ''}
+                                    ${totalScore ? `<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px;">総合評価スコア: ${totalScore}/100</span>` : ''}
+                                </div>
                             </div>
                             <div class="researcher-info">所属: ${researcher.affiliation}</div>
                             <div class="researcher-info">検索クエリ: ${researcher.query || '「不明」'}</div>
@@ -599,8 +600,13 @@
                             </div>
                             
                             <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                                ${hasAnalysis ? `
-                                    <a href="researcher-analysis.html?id=${analysisData.id}" class="btn btn-primary" style="text-decoration: none;">
+                                ${!hasDetailedAnalysis && analysisData && analysisData.analysis_id ? `
+                                    <button class="btn btn-primary" onclick="runDetailedAnalysisFromProject('${analysisData.analysis_id}')">
+                                        🤖 AI詳細分析を実行
+                                    </button>
+                                ` : ''}
+                                ${hasDetailedAnalysis ? `
+                                    <a href="researcher-analysis.html?id=${analysisData.analysis_id}" class="btn btn-primary" style="text-decoration: none;">
                                         📊 詳細を見る
                                     </a>
                                 ` : ''}
@@ -819,6 +825,81 @@ ${currentProject.requirements || '特になし'}
             
             document.getElementById(tabName + '-tab').classList.add('active');
             event.target.classList.add('active');
+        }
+        
+        // プロジェクトからAI詳細分析を実行する関数
+        async function runDetailedAnalysisFromProject(analysisId) {
+            try {
+                // 保存済み分析を取得
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+                
+                if (!analysis) {
+                    alert('分析データが見つかりません');
+                    return;
+                }
+                
+                // 必要な情報があるかチェック
+                if (!analysis.researchmap_url || !analysis.query) {
+                    alert('AI詳細分析に必要な情報（ResearchMap URLまたは検索クエリ）が不足しています');
+                    return;
+                }
+                
+                // ボタンを無効化
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '🔄 分析実行中...';
+                
+                // API呼び出し
+                const response = await fetch(`${apiClient.baseURL}/api/analyze-researcher`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        researchmap_url: analysis.researchmap_url,
+                        query: analysis.query,
+                        researcher_basic_info: {
+                            name_ja: analysis.researcher_name
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.analysis) {
+                    // 分析結果を既存のデータに統合
+                    analysis.analysis_result = result.analysis;
+                    analysis.relevance_score = result.analysis.scores?.total || analysis.relevance_score;
+                    analysis.affiliation = result.analysis.affiliation || analysis.affiliation;
+                    analysis.updated_at = new Date().toISOString();
+                    
+                    // ローカルストレージに保存
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                    
+                    alert('✅ AI詳細分析が完了しました！');
+                    
+                    // 研究者一覧を再読み込み
+                    await loadSelectedResearchers();
+                    
+                } else {
+                    throw new Error(result.error || 'AI詳細分析に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('AI詳細分析エラー:', error);
+                alert(`❌ AI詳細分析に失敗しました: ${error.message}`);
+                
+                // ボタンを元に戻す
+                const button = event.target;
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
         }
     </script>
 </body>
