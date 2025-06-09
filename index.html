@@ -535,9 +535,14 @@
                         <input type="text" class="form-control" id="api-search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="performAPISearch()" style="width: 100%;">
-                        🚀 研究者を検索
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="performAPISearch()" style="flex: 1;">
+                            🚀 研究者を検索
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearSearchAndResults()" style="width: 120px;">
+                            🗑️ クリア
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- API検索結果表示エリア -->
@@ -994,6 +999,10 @@
         window.universityList = [];
         window.selectedUniversities = [];
         
+        // 検索結果保持機能のためのグローバル変数
+        let lastSearchState = null;
+        const SEARCH_STATE_EXPIRY = 30 * 60 * 1000; // 30分
+        
         // 検索方法変更時の処理
         window.onSearchMethodChange = function() {
             const searchMethod = document.getElementById('search-method').value;
@@ -1323,6 +1332,197 @@
             resultsContainer.innerHTML = html;
         }
 
+        // 検索状態保存・復元機能
+        function saveSearchState(searchParams, apiResponse) {
+            const searchState = {
+                params: searchParams,
+                response: apiResponse,
+                timestamp: Date.now(),
+                url: window.location.pathname
+            };
+            
+            // セッションストレージに保存
+            sessionStorage.setItem('lastSearchState', JSON.stringify(searchState));
+            
+            // グローバル変数にも保存
+            lastSearchState = searchState;
+            
+            // URLパラメータも更新
+            updateURLWithSearchParams(searchParams);
+            
+            console.log('🔄 検索状態を保存しました:', searchState);
+        }
+        
+        function updateURLWithSearchParams(searchParams) {
+            const urlParams = new URLSearchParams();
+            urlParams.set('q', searchParams.query);
+            urlParams.set('method', searchParams.method);
+            urlParams.set('max', searchParams.maxResults.toString());
+            
+            if (searchParams.useLLMExpansion) urlParams.set('expand', '1');
+            if (searchParams.useLLMSummary) urlParams.set('summary', '1');
+            if (searchParams.youngResearcherFilter) urlParams.set('young', '1');
+            if (searchParams.universityFilter && searchParams.universityFilter.length > 0) {
+                urlParams.set('uni', searchParams.universityFilter.join(','));
+            }
+            
+            // ブラウザ履歴にURLを追加（ページ遷移なし）
+            const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+            window.history.replaceState({ searchParams }, '', newUrl);
+        }
+        
+        function restoreSearchState() {
+            // URLパラメータから復元を試行
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('q')) {
+                console.log('🔄 URLパラメータから検索状態を復元します');
+                restoreFromURLParams(urlParams);
+                return true;
+            }
+            
+            // セッションストレージから復元を試行
+            const savedState = sessionStorage.getItem('lastSearchState');
+            if (savedState) {
+                try {
+                    const state = JSON.parse(savedState);
+                    const age = Date.now() - state.timestamp;
+                    
+                    // 30分以内で、同じページなら復元
+                    if (age < SEARCH_STATE_EXPIRY && state.url === window.location.pathname) {
+                        console.log('🔄 セッションストレージから検索状態を復元します:', state);
+                        restoreFromSearchState(state);
+                        return true;
+                    } else {
+                        console.log('⏰ 検索状態が古いため削除します');
+                        sessionStorage.removeItem('lastSearchState');
+                    }
+                } catch (error) {
+                    console.error('❌ 検索状態の復元エラー:', error);
+                    sessionStorage.removeItem('lastSearchState');
+                }
+            }
+            
+            return false;
+        }
+        
+        function restoreFromURLParams(urlParams) {
+            // フォームに検索条件を復元
+            document.getElementById('api-search-input').value = urlParams.get('q') || '';
+            document.getElementById('search-method').value = urlParams.get('method') || 'semantic';
+            document.getElementById('max-results').value = urlParams.get('max') || '5';
+            document.getElementById('max-results-display').textContent = urlParams.get('max') || '5';
+            
+            document.getElementById('llm-expansion').checked = urlParams.has('expand');
+            document.getElementById('llm-summary').checked = urlParams.has('summary') || urlParams.get('summary') !== '0';
+            document.getElementById('young-researcher-filter').checked = urlParams.has('young');
+            
+            if (urlParams.has('uni')) {
+                window.selectedUniversities = urlParams.get('uni').split(',').filter(u => u.length > 0);
+            }
+            
+            // 検索方法の変更に応じてUI更新
+            onSearchMethodChange();
+            
+            // 大学フィルターの表示を更新
+            if (window.selectedUniversities.length > 0) {
+                setTimeout(() => {
+                    displayUniversityList();
+                }, 1000);
+            }
+            
+            // 自動的に検索を再実行
+            setTimeout(() => {
+                console.log('🔍 URLパラメータに基づいて検索を自動実行します');
+                performAPISearch();
+            }, 1500);
+        }
+        
+        function restoreFromSearchState(state) {
+            // フォームに検索条件を復元
+            const params = state.params;
+            document.getElementById('api-search-input').value = params.query || '';
+            document.getElementById('search-method').value = params.method || 'semantic';
+            document.getElementById('max-results').value = params.maxResults || 5;
+            document.getElementById('max-results-display').textContent = params.maxResults || 5;
+            
+            document.getElementById('llm-expansion').checked = params.useLLMExpansion || false;
+            document.getElementById('llm-summary').checked = params.useLLMSummary !== undefined ? params.useLLMSummary : true;
+            document.getElementById('young-researcher-filter').checked = params.youngResearcherFilter || false;
+            
+            if (params.universityFilter && params.universityFilter.length > 0) {
+                window.selectedUniversities = [...params.universityFilter];
+            }
+            
+            // 検索結果を直接表示（API再呼び出しなし）
+            if (state.response) {
+                console.log('📊 保存された検索結果を表示します');
+                displayAPISearchResults(state.response);
+                
+                // 復元成功メッセージを追加
+                const resultsContainer = document.getElementById('api-search-results');
+                const timestamp = new Date(state.timestamp).toLocaleString('ja-JP');
+                resultsContainer.insertAdjacentHTML('afterbegin', `
+                    <div class="alert alert-info" style="margin-bottom: 15px;">
+                        🔄 前回の検索結果を復元しました（${timestamp}）
+                        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: #0c5460; cursor: pointer;">✕</button>
+                    </div>
+                `);
+            }
+            
+            // 検索方法の変更に応じてUI更新
+            onSearchMethodChange();
+            
+            // 大学フィルターの表示を更新
+            if (window.selectedUniversities.length > 0) {
+                setTimeout(() => {
+                    displayUniversityList();
+                }, 500);
+            }
+        }
+        
+        // 検索状態をクリア
+        function clearSearchState() {
+            sessionStorage.removeItem('lastSearchState');
+            lastSearchState = null;
+            
+            // URLパラメータもクリア
+            const url = new URL(window.location);
+            url.search = '';
+            window.history.replaceState({}, '', url.toString());
+            
+            console.log('🗑️ 検索状態をクリアしました');
+        }
+        
+        // 検索と結果をすべてクリア
+        window.clearSearchAndResults = function() {
+            // フォームをリセット
+            document.getElementById('api-search-input').value = '';
+            document.getElementById('search-method').value = 'semantic';
+            document.getElementById('max-results').value = 5;
+            document.getElementById('max-results-display').textContent = '5';
+            document.getElementById('llm-expansion').checked = false;
+            document.getElementById('llm-summary').checked = true;
+            document.getElementById('young-researcher-filter').checked = false;
+            
+            // 大学フィルターをクリア
+            clearUniversityFilter();
+            
+            // 検索結果をクリア
+            document.getElementById('api-search-results').innerHTML = `
+                <div class="alert alert-info">
+                    キーワードを入力して「研究者を検索」ボタンを押してください。
+                </div>
+            `;
+            
+            // 検索状態をクリア
+            clearSearchState();
+            
+            // UIを更新
+            onSearchMethodChange();
+            
+            console.log('🗑️ 検索フォームと結果をクリアしました');
+        }
+
         // 実際のAPI検索関数
         window.performAPISearch = async function() {
             const searchInput = document.getElementById('api-search-input');
@@ -1378,6 +1578,9 @@
                 
                 // 結果表示
                 displayAPISearchResults(apiResponse);
+                
+                // 検索状態を保存
+                saveSearchState(searchParams, apiResponse);
 
             } catch (error) {
                 console.error('API検索エラー:', error);
@@ -2098,6 +2301,14 @@
             if (page === 'researchers') {
                 // 研究者検索ページの場合はAPIヘルスチェックを実行
                 checkAPIHealth();
+                
+                // 検索結果の復元を試行
+                setTimeout(() => {
+                    const restored = restoreSearchState();
+                    if (restored) {
+                        console.log('✅ 研究者検索ページで検索状態を復元しました');
+                    }
+                }, 500);
             } else if (page === 'projects') {
                 // プロジェクトページの場合は仮プロジェクト一覧を更新
                 console.log('📋 プロジェクトページ表示時に一覧を更新');
@@ -2178,6 +2389,14 @@
             
             // 大学リストを取得
             loadUniversityList();
+            
+            // 検索状態の復元を試行（初期読み込み時）
+            setTimeout(() => {
+                const restored = restoreSearchState();
+                if (restored) {
+                    console.log('✅ ページ読み込み時に検索状態を復元しました');
+                }
+            }, 2000); // 大学リスト読み込み後に実行
             
             // 検索方法変更時のイベントリスナー追加
             const searchMethodSelect = document.getElementById('search-method');
