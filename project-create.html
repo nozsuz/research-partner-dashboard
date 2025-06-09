@@ -260,7 +260,28 @@
     <script src="api-client.js"></script>
     <script src="js/project-manager.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        // プロジェクトマネージャーの初期化を確認する関数
+        function ensureProjectManagerReady() {
+            return new Promise((resolve) => {
+                if (window.projectManager) {
+                    resolve();
+                } else {
+                    // project-manager.jsが読み込まれるまで待機
+                    const checkInterval = setInterval(() => {
+                        if (window.projectManager) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // プロジェクトマネージャーの準備完了を待つ
+            await ensureProjectManagerReady();
+            console.log('✅ プロジェクトマネージャー初期化完了');
+            
             // プロジェクト作成フォームのイベントリスナー
             document.getElementById('project-create-form').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -272,6 +293,13 @@
         });
 
         async function createTempProject() {
+            // プロジェクトマネージャーが利用可能かチェック
+            if (!window.projectManager) {
+                console.error('❌ プロジェクトマネージャーが初期化されていません');
+                alert('❌ システムの初期化中です。少し待ってから再試行してください。');
+                return;
+            }
+
             const formData = {
                 name: document.getElementById('project-name').value,
                 description: document.getElementById('project-description').value,
@@ -294,8 +322,12 @@
             submitBtn.innerHTML = '🔄 作成中...';
 
             try {
+                console.log('📝 プロジェクト作成開始:', formData.name);
+                
                 // プロジェクト管理クラスを使用
                 const project = await window.projectManager.createTempProject(formData);
+                
+                console.log('✅ プロジェクト作成成功:', project);
                 
                 // 下書きデータをクリア
                 localStorage.removeItem('projectDraft');
@@ -304,8 +336,8 @@
                 window.location.href = `temp-project.html?id=${project.id}`;
                 
             } catch (error) {
-                console.error('プロジェクト作成エラー:', error);
-                alert('❌ プロジェクト作成に失敗しました。もう一度お試しください。');
+                console.error('❌ プロジェクト作成エラー:', error);
+                alert('❌ プロジェクト作成に失敗しました。詳細: ' + error.message);
                 
                 // ボタンを元に戻す
                 submitBtn.disabled = false;

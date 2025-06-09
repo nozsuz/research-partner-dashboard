@@ -608,8 +608,15 @@ ${latestProject.description}
         }
         
         // ページ読み込み時の初期化
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('🧪 プロジェクト機能統合テストページ読み込み完了');
+            
+            // プロジェクトマネージャーの初期化を待つ
+            let retryCount = 0;
+            while (!window.projectManager && retryCount < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retryCount++;
+            }
             
             // 依存関係チェック
             const dependencies = {

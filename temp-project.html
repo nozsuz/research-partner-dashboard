@@ -438,7 +438,27 @@
         let currentProjectId = null;
         let currentProject = null;
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // プロジェクトマネージャーの初期化を確認する関数
+        function ensureProjectManagerReady() {
+            return new Promise((resolve) => {
+                if (window.projectManager) {
+                    resolve();
+                } else {
+                    const checkInterval = setInterval(() => {
+                        if (window.projectManager) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // プロジェクトマネージャーの準備完了を待つ
+            await ensureProjectManagerReady();
+            console.log('✅ プロジェクトマネージャー初期化完了');
+            
             const urlParams = new URLSearchParams(window.location.search);
             currentProjectId = urlParams.get('id');
             

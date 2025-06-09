@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>システム診断</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .diagnostic-card {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-ok { color: #28a745; }
+        .status-error { color: #dc3545; }
+        .status-warning { color: #ffc107; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 システム診断</h1>
+    
+    <div class="diagnostic-card">
+        <h3>📦 依存関係チェック</h3>
+        <div id="dependencies-check"></div>
+    </div>
+    
+    <div class="diagnostic-card">
+        <h3>🔍 プロジェクトマネージャー詳細</h3>
+        <div id="project-manager-check"></div>
+    </div>
+    
+    <div class="diagnostic-card">
+        <h3>💾 ローカルストレージ確認</h3>
+        <div id="storage-check"></div>
+    </div>
+    
+    <div class="diagnostic-card">
+        <h3>🧪 簡易テスト</h3>
+        <button onclick="runQuickTest()">プロジェクト作成テスト実行</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="js/project-manager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機
+            runDiagnostics();
+        });
+
+        function runDiagnostics() {
+            // 依存関係チェック
+            const dependencies = {
+                'config.js': typeof window.config !== 'undefined',
+                'api-client.js': typeof window.apiClient !== 'undefined',
+                'project-manager.js': typeof window.projectManager !== 'undefined'
+            };
+
+            let depHtml = '';
+            Object.keys(dependencies).forEach(dep => {
+                const status = dependencies[dep] ? 'status-ok' : 'status-error';
+                const icon = dependencies[dep] ? '✅' : '❌';
+                depHtml += `<div class="${status}">${icon} ${dep}: ${dependencies[dep] ? '読み込み成功' : '読み込み失敗'}</div>`;
+            });
+            document.getElementById('dependencies-check').innerHTML = depHtml;
+
+            // プロジェクトマネージャー詳細
+            let pmHtml = '';
+            if (window.projectManager) {
+                pmHtml = `
+                    <div class="status-ok">✅ プロジェクトマネージャー: 利用可能</div>
+                    <div>useAPI: ${window.projectManager.useAPI}</div>
+                    <div>メソッド確認:</div>
+                    <ul>
+                        <li>createTempProject: ${typeof window.projectManager.createTempProject === 'function' ? '✅' : '❌'}</li>
+                        <li>getTempProjects: ${typeof window.projectManager.getTempProjects === 'function' ? '✅' : '❌'}</li>
+                        <li>checkAPIAvailability: ${typeof window.projectManager.checkAPIAvailability === 'function' ? '✅' : '❌'}</li>
+                    </ul>
+                `;
+            } else {
+                pmHtml = '<div class="status-error">❌ プロジェクトマネージャー: 利用不可</div>';
+            }
+            document.getElementById('project-manager-check').innerHTML = pmHtml;
+
+            // ローカルストレージ確認
+            let storageHtml = '';
+            try {
+                const testKey = 'diagnostic-test';
+                const testValue = 'test-data';
+                localStorage.setItem(testKey, testValue);
+                const retrieved = localStorage.getItem(testKey);
+                localStorage.removeItem(testKey);
+
+                if (retrieved === testValue) {
+                    storageHtml += '<div class="status-ok">✅ ローカルストレージ: 動作正常</div>';
+                } else {
+                    storageHtml += '<div class="status-error">❌ ローカルストレージ: データ不整合</div>';
+                }
+
+                const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+                storageHtml += `<div>既存仮プロジェクト: ${tempProjects.length}件</div>`;
+                
+            } catch (error) {
+                storageHtml += `<div class="status-error">❌ ローカルストレージエラー: ${error.message}</div>`;
+            }
+            document.getElementById('storage-check').innerHTML = storageHtml;
+        }
+
+        async function runQuickTest() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div>🔄 テスト実行中...</div>';
+
+            try {
+                // プロジェクトマネージャーの存在確認
+                if (!window.projectManager) {
+                    throw new Error('プロジェクトマネージャーが初期化されていません');
+                }
+
+                // テストプロジェクトデータ
+                const testData = {
+                    name: 'テストプロジェクト_' + Date.now(),
+                    description: 'システム診断用のテストプロジェクト',
+                    budget: '1000',
+                    duration: '6'
+                };
+
+                // プロジェクト作成テスト
+                const project = await window.projectManager.createTempProject(testData);
+                
+                resultsDiv.innerHTML = `
+                    <div class="status-ok">✅ プロジェクト作成成功</div>
+                    <pre>${JSON.stringify(project, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="status-error">❌ テスト失敗: ${error.message}</div>
+                    <pre>${error.stack || 'スタックトレースなし'}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -37,26 +37,37 @@ class ProjectManager {
 
     // ローカル作成（フォールバック）
     createTempProjectLocal(projectData) {
-        const projectId = `TEMP_${Date.now()}`;
-        const tempProject = {
-            id: projectId,
-            name: projectData.name,
-            description: projectData.description,
-            budget: projectData.budget,
-            duration: projectData.duration,
-            requirements: projectData.requirements,
-            keywords: projectData.keywords,
-            status: 'draft',
-            created_at: new Date().toISOString(),
-            selected_researchers: []
-        };
+        try {
+            // 入力データのバリデーション
+            if (!projectData || !projectData.name || !projectData.description) {
+                throw new Error('プロジェクト名と概要は必須です');
+            }
 
-        // ローカルストレージに保存
-        const tempProjects = this.getTempProjectsLocal();
-        tempProjects.push(tempProject);
-        localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+            const projectId = `TEMP_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            const tempProject = {
+                id: projectId,
+                name: projectData.name,
+                description: projectData.description,
+                budget: projectData.budget || null,
+                duration: projectData.duration || null,
+                requirements: projectData.requirements || '',
+                keywords: projectData.keywords || '',
+                status: 'draft',
+                created_at: new Date().toISOString(),
+                selected_researchers: []
+            };
 
-        return tempProject;
+            // ローカルストレージに保存
+            const tempProjects = this.getTempProjectsLocal();
+            tempProjects.push(tempProject);
+            localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+
+            console.log('✅ ローカルプロジェクト作成成功:', projectId);
+            return tempProject;
+        } catch (error) {
+            console.error('❌ ローカルプロジェクト作成エラー:', error);
+            throw error;
+        }
     }
 
     // 仮プロジェクト一覧を取得（API統合版）
@@ -290,12 +301,28 @@ class ProjectManager {
     }
 }
 
-// グローバルインスタンス
-window.projectManager = new ProjectManager();
+// グローバルインスタンスの初期化
+function initializeProjectManager() {
+    if (!window.projectManager) {
+        console.log('🚀 プロジェクトマネージャー初期化開始');
+        window.projectManager = new ProjectManager();
+        console.log('✅ プロジェクトマネージャー初期化完了');
+    }
+    return window.projectManager;
+}
+
+// 即座に初期化
+const projectManager = initializeProjectManager();
 
 // ページ読み込み時にAPI可用性をチェック
 document.addEventListener('DOMContentLoaded', async function() {
-    if (window.projectManager) {
-        await window.projectManager.checkAPIAvailability();
+    // プロジェクトマネージャーが確実に存在することを確認
+    const manager = window.projectManager || initializeProjectManager();
+    
+    try {
+        await manager.checkAPIAvailability();
+        console.log('🔍 API可用性チェック完了');
+    } catch (error) {
+        console.warn('⚠️ API可用性チェックでエラー:', error);
     }
 });
