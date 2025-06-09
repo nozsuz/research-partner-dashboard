@@ -332,7 +332,12 @@
         
         <div class="header">
             <h1 id="project-title">📋 仮プロジェクト管理</h1>
-            <div id="project-status" class="status-badge status-draft">読み込み中...</div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="project-status" class="status-badge status-draft">読み込み中...</div>
+                <button id="delete-project-btn" class="btn btn-danger" onclick="deleteCurrentProject()" style="display: none;">
+                    🗑️ プロジェクトを削除
+                </button>
+            </div>
         </div>
 
         <div class="tabs">
@@ -353,24 +358,11 @@
 
         <!-- 研究者選択タブ -->
         <div id="researchers-tab" class="tab-content">
-            <div class="search-section">
-                <h3>🔍 研究者検索・選択</h3>
-                <p>プロジェクトに適した研究者を検索し、候補として追加してください。</p>
-                
-                <div class="form-group">
-                    <label for="researcher-search">研究者検索</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="researcher-search" class="form-control" 
-                               placeholder="研究者名、キーワード、専門分野などを入力...">
-                        <button class="btn btn-primary" onclick="searchResearchers()">🔍 検索</button>
-                    </div>
-                </div>
-
-                <div id="search-results"></div>
-            </div>
-
-            <div class="selected-researchers-section">
-                <h3>✅ 選択済み研究者候補</h3>
+            <div class="selected-researchers-section" style="background: white; border-left: 4px solid #667eea;">
+                <h3>👨‍🔬 選択済み研究者候補</h3>
+                <p style="color: #666; margin-bottom: 20px;">
+                    研究者検索ページから「プロジェクト候補に追加」した研究者がここに表示されます。
+                </p>
                 <div id="selected-researchers-list">
                     <div class="loading">
                         <div class="spinner"></div>
@@ -509,6 +501,9 @@
             statusElement.textContent = statusText;
             statusElement.className = `status-badge status-${currentProject.status}`;
             
+            // 削除ボタンを表示
+            document.getElementById('delete-project-btn').style.display = 'block';
+            
             const overviewHtml = `
                 <h3>📋 プロジェクト基本情報</h3>
                 <div class="info-item">
@@ -552,110 +547,11 @@
             return statusMap[status] || status;
         }
 
-        async function searchResearchers() {
-            const query = document.getElementById('researcher-search').value.trim();
-            if (!query) {
-                alert('検索キーワードを入力してください');
-                return;
-            }
 
-            const resultsContainer = document.getElementById('search-results');
-            resultsContainer.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    研究者を検索中...
-                </div>
-            `;
 
-            try {
-                // 既存の研究者検索APIを利用
-                if (window.apiClient) {
-                    const searchParams = {
-                        query: query,
-                        method: 'semantic',
-                        maxResults: 10,
-                        useLLMSummary: true
-                    };
 
-                    const apiResponse = await window.apiClient.searchResearchers(searchParams);
-                    displaySearchResults(apiResponse.results || []);
-                } else {
-                    throw new Error('検索APIが利用できません');
-                }
-                
-            } catch (error) {
-                console.error('研究者検索エラー:', error);
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-warning">
-                        研究者検索に失敗しました: ${error.message}
-                    </div>
-                `;
-            }
-        }
 
-        function displaySearchResults(researchers) {
-            const resultsContainer = document.getElementById('search-results');
-            
-            if (researchers.length === 0) {
-                resultsContainer.innerHTML = '<div class="alert alert-info">該当する研究者が見つかりませんでした。</div>';
-                return;
-            }
 
-            let html = '<h4>🔍 検索結果</h4>';
-            researchers.forEach(researcher => {
-                const name = researcher.name_ja || researcher.name_en || '名前不明';
-                const affiliation = researcher.main_affiliation_name_ja || '所属不明';
-                const keywords = researcher.research_keywords_ja || 'N/A';
-                
-                html += `
-                    <div class="researcher-card">
-                        <div class="researcher-name">${name}</div>
-                        <div class="researcher-info">所属: ${affiliation}</div>
-                        <div class="researcher-info">研究キーワード: ${keywords}</div>
-                        ${researcher.llm_summary ? `
-                            <div class="researcher-info" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px;">
-                                <strong>AI要約:</strong> ${researcher.llm_summary}
-                            </div>
-                        ` : ''}
-                        <div style="margin-top: 15px;">
-                            <button class="btn btn-primary" onclick="addResearcherToProject('${name}', '${affiliation}', '${researcher.researchmap_url || ''}')">
-                                ➕ プロジェクトに追加
-                            </button>
-                            ${researcher.researchmap_url ? `
-                                <a href="${researcher.researchmap_url}" target="_blank" class="btn btn-secondary" style="margin-left: 10px;">
-                                    🔗 ResearchMap
-                                </a>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            resultsContainer.innerHTML = html;
-        }
-
-        async function addResearcherToProject(name, affiliation, url) {
-            if (!window.projectManager) {
-                alert('プロジェクト管理システムが利用できません');
-                return;
-            }
-
-            try {
-                const researcher = { name, affiliation, url };
-                const success = await window.projectManager.addResearcherToTempProject(currentProjectId, researcher);
-                
-                if (success) {
-                    alert(`✅ ${name}をプロジェクト候補に追加しました`);
-                    loadSelectedResearchers();
-                    updateMatchingTab();
-                } else {
-                    alert('⚠️ この研究者は既に追加されています');
-                }
-            } catch (error) {
-                console.error('研究者追加エラー:', error);
-                alert('❌ 研究者の追加に失敗しました');
-            }
-        }
 
         async function loadSelectedResearchers() {
             const listContainer = document.getElementById('selected-researchers-list');
@@ -667,26 +563,54 @@
                 const researchers = currentProject.selected_researchers || [];
                 
                 if (researchers.length === 0) {
-                    listContainer.innerHTML = '<p style="color: #666;">まだ研究者が選択されていません。</p>';
+                    listContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <p>研究者がまだ選択されていません。</p>
+                            <p><a href="index.html" style="color: #667eea; text-decoration: none;">研究者検索ページ</a>から「プロジェクト候補に追加」してください。</p>
+                        </div>
+                    `;
                     return;
                 }
 
+                // 研究者分析データと連携して詳細情報を取得
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+
                 let html = '';
                 researchers.forEach((researcher, index) => {
+                    // 分析データを検索
+                    const analysisData = savedAnalyses.find(analysis => 
+                        analysis.researcher_name === researcher.name && 
+                        analysis.affiliation === researcher.affiliation
+                    );
+                    
+                    const hasAnalysis = analysisData && analysisData.has_detailed_analysis;
+                    const totalScore = analysisData && analysisData.relevance_score ? analysisData.relevance_score : null;
+                    
                     html += `
-                        <div class="researcher-card">
-                            <div class="researcher-name">${researcher.name}</div>
-                            <div class="researcher-info">所属: ${researcher.affiliation}</div>
-                            ${researcher.url ? `
-                                <div class="researcher-info">
-                                    <a href="${researcher.url}" target="_blank" style="color: #667eea;">ResearchMap</a>
-                                </div>
-                            ` : ''}
-                            <div class="researcher-info" style="color: #666; font-size: 12px;">
-                                追加日: ${new Date(researcher.added_at).toLocaleString('ja-JP')}
+                        <div class="researcher-card" style="border-left: 4px solid ${hasAnalysis ? '#4caf50' : '#ddd'};">
+                            <div class="researcher-name" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>${researcher.name}</span>
+                                ${totalScore ? `<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px;">総合評価スコア: ${totalScore}/100</span>` : ''}
                             </div>
-                            <div style="margin-top: 10px;">
-                                <button class="btn btn-danger" onclick="removeResearcher('${researcher.name}')">
+                            <div class="researcher-info">所属: ${researcher.affiliation}</div>
+                            <div class="researcher-info">検索クエリ: ${researcher.query || '「不明」'}</div>
+                            <div class="researcher-info" style="color: #666; font-size: 14px;">
+                                保存日時: ${new Date(researcher.added_at).toLocaleString('ja-JP')}
+                            </div>
+                            
+                            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                ${hasAnalysis ? `
+                                    <a href="researcher-analysis.html?id=${analysisData.id}" class="btn btn-primary" style="text-decoration: none;">
+                                        📊 詳細を見る
+                                    </a>
+                                ` : ''}
+                                ${researcher.url ? `
+                                    <a href="${researcher.url}" target="_blank" class="btn btn-secondary" style="text-decoration: none;">
+                                        🔗 ResearchMap
+                                    </a>
+                                ` : ''}
+                                <button class="btn btn-danger" onclick="removeResearcher('${researcher.name.replace(/'/g, "\\'")}')"
+                                        style="margin-left: auto;">
                                     ❌ 削除
                                 </button>
                             </div>
@@ -842,6 +766,45 @@ ${currentProject.requirements || '特になし'}
                 // ボタンを元に戻す
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '📤 マッチング依頼を送信';
+            }
+        }
+
+        // プロジェクト削除機能
+        async function deleteCurrentProject() {
+            if (!currentProject || !window.projectManager) {
+                alert('プロジェクトが取得できません');
+                return;
+            }
+            
+            const confirmMessage = `「${currentProject.name}」を削除しますか？\n\nこの操作は取り消すことができません。\n選択された研究者の情報も全て削除されます。`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            const deleteBtn = document.getElementById('delete-project-btn');
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '🔄 削除中...';
+            
+            try {
+                const result = await window.projectManager.deleteTempProject(currentProjectId);
+                
+                if (result.status === 'success') {
+                    alert(`✅ 「${currentProject.name}」を削除しました`);
+                    
+                    // ダッシュボードに戻る
+                    window.location.href = 'index.html';
+                } else {
+                    throw new Error(result.message || '削除に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('プロジェクト削除エラー:', error);
+                alert(`❌ 削除に失敗しました: ${error.message}`);
+                
+                // ボタンを元に戻す
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '🗑️ プロジェクトを削除';
             }
         }
 

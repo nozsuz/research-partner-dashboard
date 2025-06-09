@@ -290,7 +290,114 @@
             
             // 下書きデータがあれば読み込み
             loadDraftData();
+            
+            // 保留中の研究者情報をチェック
+            checkPendingResearcher();
         });
+
+        // 保留中の研究者情報をチェック
+        function checkPendingResearcher() {
+            const pendingResearcher = sessionStorage.getItem('pendingResearcher');
+            if (pendingResearcher) {
+                try {
+                    const researcher = JSON.parse(pendingResearcher);
+                    
+                    // 通知メッセージを表示
+                    const infoBox = document.querySelector('.info-box');
+                    if (infoBox) {
+                        infoBox.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)';
+                        infoBox.style.borderLeftColor = '#ffc107';
+                        infoBox.innerHTML = `
+                            <h3>🎯 研究者が選択されています</h3>
+                            <p>
+                                <strong>${researcher.name}</strong> (${researcher.affiliation})がプロジェクト候補として選択されています。<br>
+                                プロジェクト作成後、自動的に追加されます。
+                            </p>
+                        `;
+                    }
+                    
+                    console.log('📌 保留中の研究者を検出:', researcher.name);
+                } catch (error) {
+                    console.error('保留中研究者情報の解析エラー:', error);
+                    sessionStorage.removeItem('pendingResearcher');
+                }
+            }
+        }
+
+        // 保留中の研究者をプロジェクトに追加
+        async function addPendingResearcher(projectId) {
+            const pendingResearcher = sessionStorage.getItem('pendingResearcher');
+            if (!pendingResearcher) return;
+            
+            try {
+                const researcher = JSON.parse(pendingResearcher);
+                console.log('🎯 保留中の研究者をプロジェクトに追加:', researcher.name);
+                
+                const success = await window.projectManager.addResearcherToTempProject(projectId, {
+                    name: researcher.name,
+                    affiliation: researcher.affiliation,
+                    url: researcher.url || '',
+                    query: researcher.query || '',
+                    added_at: new Date().toISOString()
+                });
+                
+                if (success) {
+                    console.log('✅ 研究者自動追加成功:', researcher.name);
+                    
+                    // 研究者分析データにも保存
+                    saveToResearcherAnalysis({
+                        name: researcher.name,
+                        affiliation: researcher.affiliation,
+                        url: researcher.url || '',
+                        query: researcher.query || '',
+                        added_at: new Date().toISOString()
+                    });
+                } else {
+                    console.warn('⚠️ 研究者自動追加失敗:', researcher.name);
+                }
+                
+                // 保留情報をクリア
+                sessionStorage.removeItem('pendingResearcher');
+                
+            } catch (error) {
+                console.error('保留中研究者追加エラー:', error);
+                sessionStorage.removeItem('pendingResearcher');
+            }
+        }
+
+        // 研究者分析データに保存
+        function saveToResearcherAnalysis(researcherData) {
+            try {
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                
+                // 既に保存済みかチェック
+                const exists = savedAnalyses.some(analysis => 
+                    analysis.researcher_name === researcherData.name && 
+                    analysis.affiliation === researcherData.affiliation
+                );
+                
+                if (!exists) {
+                    const analysisData = {
+                        id: `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                        researcher_name: researcherData.name,
+                        affiliation: researcherData.affiliation,
+                        researchmap_url: researcherData.url,
+                        query: researcherData.query,
+                        saved_at: new Date().toISOString(),
+                        analysis_result: null,
+                        relevance_score: null,
+                        has_detailed_analysis: false
+                    };
+                    
+                    savedAnalyses.push(analysisData);
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                    
+                    console.log('✅ 研究者分析データに保存:', researcherData.name);
+                }
+            } catch (error) {
+                console.error('研究者分析データ保存エラー:', error);
+            }
+        }
 
         async function createTempProject() {
             // プロジェクトマネージャーが利用可能かチェック
@@ -328,6 +435,9 @@
                 const project = await window.projectManager.createTempProject(formData);
                 
                 console.log('✅ プロジェクト作成成功:', project);
+                
+                // 保留中の研究者を自動追加
+                await addPendingResearcher(project.id);
                 
                 // 下書きデータをクリア
                 localStorage.removeItem('projectDraft');

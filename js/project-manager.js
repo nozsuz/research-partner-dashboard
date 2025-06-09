@@ -285,12 +285,52 @@ if (typeof window.ProjectManager === 'undefined') {
             return false;
         }
 
+        // 仮プロジェクトを削除（API統合版）
+        async deleteTempProject(projectId) {
+            if (this.useAPI && window.apiClient) {
+                try {
+                    const result = await window.apiClient.deleteTempProject(projectId);
+                    
+                    if (result.status === 'success') {
+                        console.log('✅ API経由でプロジェクト削除成功:', projectId);
+                        return { status: 'success', api: true };
+                    }
+                } catch (error) {
+                    console.warn('⚠️ API経由の削除失敗、ローカルにフォールバック:', error);
+                }
+            }
+
+            // フォールバック：ローカルストレージ
+            return this.deleteTempProjectLocal(projectId);
+        }
+
+        // ローカルプロジェクト削除
+        deleteTempProjectLocal(projectId) {
+            try {
+                const tempProjects = this.getTempProjectsLocal();
+                const index = tempProjects.findIndex(p => p.id === projectId);
+                
+                if (index !== -1) {
+                    const deletedProject = tempProjects.splice(index, 1)[0];
+                    localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+                    
+                    console.log('✅ ローカルプロジェクト削除成功:', deletedProject.name);
+                    return { status: 'success', api: false, project: deletedProject };
+                } else {
+                    throw new Error('指定されたプロジェクトが見つかりません');
+                }
+            } catch (error) {
+                console.error('❌ ローカルプロジェクト削除エラー:', error);
+                return { status: 'error', message: error.message };
+            }
+        }
+
         // プロジェクトデータの同期（API ⇄ ローカル）
         async syncProjectData() {
             if (!this.useAPI) return;
 
             try {
-                const localProjects = this.getTempProjectsLocal();
+                const localProjects = this                const localProjects = this.getTempProjectsLocal();
                 const apiProjects = await this.getTempProjects();
 
                 // 簡易的な同期ロジック（実際の実装ではもっと複雑になる）
