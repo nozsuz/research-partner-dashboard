@@ -440,12 +440,6 @@
 
                 <!-- コンサルタント依頼セクション -->
                 <div class="request-type-section">
-                    <h4>👨‍💼 専門コンサルタントへの依頼</h4>
-                    <p style="color: #666; margin-bottom: 15px;">専門コンサルタントが、プロジェクトに最適な研究者をマッチングいたします。</p>
-                    
-                    <!-- 隠しラジオボタン（コンサルタント依頼固定） -->
-                    <input type="radio" name="request-type" value="consultant" checked style="display: none;">
-                    
                     <div class="alert alert-info">
                         📋 <strong>コンサルタントサービスの特徴</strong>
                         <ul style="margin-top: 10px; margin-left: 20px; margin-bottom: 10px;">
@@ -457,17 +451,29 @@
                     </div>
                     
                     <div id="consultant-requirements" class="consultant-requirements show">
-                        <label for="consultant-requirements-text">コンサルタントへの要求事項 <span style="color: #dc3545;">*</span></label>
-                        <textarea id="consultant-requirements-text" class="form-control" rows="5" 
-                                 placeholder="コンサルタントに求める具体的な要件を記載してください...
+                        <label for="consultant-requirements-select">コンサルタントへの要求事項 <span style="color: #dc3545;">*</span></label>
+                        <select id="consultant-requirements-select" class="form-control" style="margin-bottom: 15px;" multiple size="8">
+                            <option value="specific_field">特定の研究分野に精通した研究者を希望</option>
+                            <option value="industry_experience">産業界での実務経験がある研究者を優先</option>
+                            <option value="international_network">国際的な研究ネットワークを持つ研究者</option>
+                            <option value="fulltime_participation">プロジェクト期間中のフルタイム参加が可能な研究者</option>
+                            <option value="specific_technology">特定の技術や手法に関する専門知識を持つ研究者</option>
+                            <option value="past_success">過去に類似プロジェクトでの成功実績がある研究者</option>
+                            <option value="publication_record">高い論文発表実績を持つ研究者</option>
+                            <option value="collaborative_experience">企業との共同研究経験が豊富な研究者</option>
+                            <option value="young_researcher">若手研究者（ポスドク・助教レベル）を希望</option>
+                            <option value="senior_researcher">シニア研究者（教授・准教授レベル）を希望</option>
+                        </select>
+                        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">※ 複数選択可能です（Ctrlキーを押しながらクリック）</p>
+                        
+                        <label for="consultant-requirements-additional">追加要求事項（オプション）</label>
+                        <textarea id="consultant-requirements-additional" class="form-control" rows="4" 
+                                 placeholder="上記の選択項目以外に特別な要求がある場合は、こちらに具体的に記載してください...
 
 例：
-・特定の研究分野に精通した研究者を希望
-・産業界での実務経験がある研究者を優先
-・国際的な研究ネットワークを持つ研究者
-・プロジェクト期間中のフルタイム参加が可能な研究者
-・特定の技術や手法に関する専門知識を持つ研究者
-・過去に類似プロジェクトでの成功実績がある研究者"></textarea>
+・英語でのコミュニケーションが可能な研究者
+・特定の地域（関東圏内など）に所在する研究者
+・その他の特殊な条件や要望"></textarea>
                     </div>
                 </div>
 
@@ -896,15 +902,32 @@ ${currentProject.keywords || '未設定'}
         async function sendMatchingRequest() {
             const message = document.getElementById('matching-message').value.trim();
             const priority = document.getElementById('matching-priority').value;
-            const consultantRequirements = document.getElementById('consultant-requirements-text').value.trim();
+            
+            // 選択式の要求事項を取得
+            const consultantRequirementsSelect = document.getElementById('consultant-requirements-select');
+            const selectedRequirements = Array.from(consultantRequirementsSelect.selectedOptions).map(option => option.text);
+            const additionalRequirements = document.getElementById('consultant-requirements-additional').value.trim();
+            
+            // 要求事項を結合
+            let consultantRequirements = '';
+            if (selectedRequirements.length > 0) {
+                consultantRequirements = '【選択項目】\n' + selectedRequirements.map(req => '・' + req).join('\n');
+            }
+            if (additionalRequirements) {
+                if (consultantRequirements) {
+                    consultantRequirements += '\n\n【追加要求事項】\n' + additionalRequirements;
+                } else {
+                    consultantRequirements = additionalRequirements;
+                }
+            }
             
             if (!message) {
                 alert('プロジェクト概要・依頼内容を入力してください');
                 return;
             }
             
-            if (!consultantRequirements) {
-                alert('コンサルタントへの要求事項を入力してください');
+            if (selectedRequirements.length === 0 && !additionalRequirements) {
+                alert('コンサルタントへの要求事項を選択または入力してください');
                 return;
             }
 
