@@ -233,10 +233,417 @@ class ResearcherSearchAPI {
             throw error;
         }
     }
+
+    // =============================================================================
+    // プロジェクト管理API
+    // =============================================================================
+
+    /**
+     * 仮プロジェクトを作成
+     */
+    async createTempProject(projectData) {
+        try {
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/temp-projects`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(projectData),
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('仮プロジェクト作成エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 仮プロジェクト一覧を取得
+     */
+    async getTempProjects(userId = null) {
+        try {
+            const url = new URL(`${this.getCurrentApiUrl()}/api/temp-projects`);
+            if (userId) {
+                url.searchParams.append('user_id', userId);
+            }
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(10000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('仮プロジェクト一覧取得エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 特定の仮プロジェクトを取得
+     */
+    async getTempProject(projectId) {
+        try {
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(10000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('仮プロジェクト取得エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * プロジェクトに研究者を追加
+     */
+    async addResearcherToProject(projectId, researcherData) {
+        try {
+            const requestData = {
+                project_id: projectId,
+                researcher_name: researcherData.name,
+                researcher_affiliation: researcherData.affiliation,
+                researchmap_url: researcherData.researchmap_url || null,
+                selection_reason: researcherData.selection_reason || null
+            };
+
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}/researchers`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('研究者追加エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * プロジェクトから研究者を削除
+     */
+    async removeResearcherFromProject(projectId, researcherName) {
+        try {
+            const encodedName = encodeURIComponent(researcherName);
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}/researchers/${encodedName}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('研究者削除エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * マッチング依頼を送信
+     */
+    async submitMatchingRequest(projectId, message, priority = 'normal') {
+        try {
+            const requestData = {
+                project_id: projectId,
+                message: message,
+                priority: priority
+            };
+
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}/matching-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+                signal: AbortSignal.timeout(20000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('マッチング依頼エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * プロジェクトステータスを更新
+     */
+    async updateProjectStatus(projectId, status) {
+        try {
+            const url = new URL(`${this.getCurrentApiUrl()}/api/temp-projects/${projectId}/status`);
+            url.searchParams.append('status', status);
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(10000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('ステータス更新エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 研究者詳細分析API
+     */
+    async analyzeResearcher(researchmapUrl, query, basicInfo = null) {
+        try {
+            const requestData = {
+                researchmap_url: researchmapUrl,
+                query: query,
+                researcher_basic_info: basicInfo
+            };
+
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/analyze-researcher`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+                signal: AbortSignal.timeout(60000) // 60秒タイムアウト（分析時間を考慮）
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('研究者分析エラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 大学一覧を取得
+     */
+    async getUniversities() {
+        try {
+            const response = await fetch(`${this.getCurrentApiUrl()}/api/universities`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('大学一覧取得エラー:', error);
+            throw error;
+        }
+    }
 }
 
 // グローバルAPIクライアントインスタンス
 const apiClient = new ResearcherSearchAPI();
+
+// プロジェクト管理用ユーティリティ関数
+class ProjectManager {
+    constructor() {
+        this.currentProject = null;
+        this.selectedResearchers = [];
+        this.useAPI = true; // APIを使用するかフラグ
+    }
+
+    // 仮プロジェクトを作成（API統合版）
+    async createTempProject(projectData) {
+        if (this.useAPI) {
+            try {
+                // バックエンドAPIを使用
+                const result = await apiClient.createTempProject({
+                    name: projectData.name,
+                    description: projectData.description,
+                    budget: projectData.budget ? parseInt(projectData.budget) : null,
+                    duration: projectData.duration ? parseInt(projectData.duration) : null,
+                    requirements: projectData.requirements,
+                    keywords: projectData.keywords,
+                    user_id: this.getCurrentUserId()
+                });
+
+                console.log('✅ API経由で仮プロジェクト作成成功:', result);
+                return result;
+
+            } catch (error) {
+                console.warn('⚠️ API経由の作成失敗、ローカルにフォールバック:', error);
+                // フォールバック：ローカルストレージ
+                return this.createTempProjectLocal(projectData);
+            }
+        } else {
+            // ローカルストレージのみ
+            return this.createTempProjectLocal(projectData);
+        }
+    }
+
+    // ローカル作成（フォールバック）
+    createTempProjectLocal(projectData) {
+        const projectId = `TEMP_${Date.now()}`;
+        const tempProject = {
+            id: projectId,
+            name: projectData.name,
+            description: projectData.description,
+            budget: projectData.budget,
+            duration: projectData.duration,
+            requirements: projectData.requirements,
+            keywords: projectData.keywords,
+            status: 'draft',
+            created_at: new Date().toISOString(),
+            selected_researchers: []
+        };
+
+        // ローカルストレージに保存
+        const tempProjects = this.getTempProjectsLocal();
+        tempProjects.push(tempProject);
+        localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+
+        return tempProject;
+    }
+
+    // 仮プロジェクト一覧を取得（API統合版）
+    async getTempProjects() {
+        if (this.useAPI) {
+            try {
+                const result = await apiClient.getTempProjects(this.getCurrentUserId());
+                
+                if (result.status === 'success') {
+                    console.log('✅ API経由で仮プロジェクト一覧取得成功:', result.projects.length, '件');
+                    return result.projects;
+                }
+            } catch (error) {
+                console.warn('⚠️ API経由の取得失敗、ローカルにフォールバック:', error);
+            }
+        }
+
+        // フォールバック：ローカルストレージ
+        return this.getTempProjectsLocal();
+    }
+
+    // ローカルプロジェクト一覧取得
+    getTempProjectsLocal() {
+        return JSON.parse(localStorage.getItem('tempProjects') || '[]');
+    }
+
+    // 特定プロジェクト取得（API統合版）
+    async getTempProject(projectId) {
+        if (this.useAPI) {
+            try {
+                const result = await apiClient.getTempProject(projectId);
+                
+                if (result.status === 'success') {
+                    console.log('✅ API経由でプロジェクト取得成功:', projectId);
+                    return result.project;
+                }
+            } catch (error) {
+                console.warn('⚠️ API経由の取得失敗、ローカルにフォールバック:', error);
+            }
+        }
+
+        // フォールバック：ローカルストレージ
+        const tempProjects = this.getTempProjectsLocal();
+        return tempProjects.find(p => p.id === projectId);
+    }
+
+    // 現在のユーザーIDを取得（セッション管理）
+    getCurrentUserId() {
+        // 簡易的なユーザーID（実際の認証システムでは適切に実装）
+        let userId = localStorage.getItem('current_user_id');
+        if (!userId) {
+            userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem('current_user_id', userId);
+        }
+        return userId;
+    }
+
+    // API使用可能性をチェック
+    async checkAPIAvailability() {
+        try {
+            const healthCheck = await apiClient.healthCheck();
+            this.useAPI = healthCheck.status === 'healthy';
+            console.log(`🔍 API可用性: ${this.useAPI ? 'Available' : 'Unavailable'}`);
+            return this.useAPI;
+        } catch (error) {
+            console.warn('⚠️ API利用不可、ローカルモードで動作:', error);
+            this.useAPI = false;
+            return false;
+        }
+    }
+}
+
+// グローバルプロジェクトマネージャーインスタンス
+const projectManager = new ProjectManager();
+
+// 仮プロジェクト作成フロー用関数
+function createNewProject() {
+    // プロジェクト作成画面へ遷移
+    window.location.href = 'project-create.html';
+}
+
+// プロジェクト詳細画面への遷移
+function viewTempProject(projectId) {
+    window.location.href = `temp-project.html?id=${projectId}`;
+}
 
 // セッションID管理
 function getOrCreateSessionId() {
@@ -501,9 +908,80 @@ function showResearcherDetail(name) {
     alert(`${name}の詳細ページへ遷移します（API連携完了後に実装予定）`);
 }
 
-// プロジェクト候補追加（モック）
-function addToProjectCandidates(name) {
-    alert(`${name}をプロジェクト候補に追加しました。`);
+// プロジェクト候補追加（統合版）
+function addToProjectCandidates(name, affiliation = '', url = '') {
+    const tempProjects = projectManager.getTempProjectsLocal();
+    
+    if (tempProjects.length === 0) {
+        alert('まず仮プロジェクトを作成してください。');
+        return;
+    }
+    
+    // 最新の仮プロジェクトに追加
+    const latestProject = tempProjects[tempProjects.length - 1];
+    const researcher = { name, affiliation, url };
+    
+    // ローカルに追加
+    if (!latestProject.selected_researchers) {
+        latestProject.selected_researchers = [];
+    }
+    
+    const exists = latestProject.selected_researchers.some(r => r.name === name);
+    if (!exists) {
+        latestProject.selected_researchers.push({
+            ...researcher,
+            added_at: new Date().toISOString()
+        });
+        localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+        alert(`${name}を「${latestProject.name}」に追加しました`);
+    } else {
+        alert('この研究者は既に追加されています');
+    }
+}
+
+// 研究者を仮プロジェクトに追加（API統合版）
+async function addResearcherToTempProject(projectId, researcher) {
+    try {
+        if (projectManager.useAPI) {
+            const result = await apiClient.addResearcherToProject(projectId, {
+                name: researcher.name,
+                affiliation: researcher.affiliation,
+                researchmap_url: researcher.url,
+                selection_reason: researcher.selection_reason || ''
+            });
+
+            if (result.status === 'success') {
+                console.log('✅ API経由で研究者追加成功:', researcher.name);
+                return true;
+            }
+        }
+        
+        // フォールバック：ローカルストレージ
+        const tempProjects = projectManager.getTempProjectsLocal();
+        const project = tempProjects.find(p => p.id === projectId);
+        
+        if (project) {
+            if (!project.selected_researchers) {
+                project.selected_researchers = [];
+            }
+            
+            // 重複チェック
+            const exists = project.selected_researchers.some(r => r.name === researcher.name);
+            if (!exists) {
+                project.selected_researchers.push({
+                    ...researcher,
+                    added_at: new Date().toISOString()
+                });
+                localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+                return true;
+            }
+        }
+        return false;
+        
+    } catch (error) {
+        console.error('研究者追加エラー:', error);
+        return false;
+    }
 }
 
 // ページ読み込み時の初期化
@@ -513,6 +991,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('改良版APIクライアント初期化完了');
     console.log('現在のAPI URL:', apiClient.getCurrentApiUrl());
+    
+    // プロジェクトマネージャーAPI可用性チェック
+    if (typeof projectManager !== 'undefined') {
+        projectManager.checkAPIAvailability();
+    }
     
     // API URL検証状況をログ出力
     setTimeout(() => {

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト機能テスト</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .test-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .result-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin: 5px 0;
+        }
+        
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-warning { background: #fff3cd; color: #856404; }
+        
+        pre {
+            background: #f1f3f4;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 プロジェクト機能統合テスト</h1>
+    
+    <div class="test-section">
+        <h2>📋 1. ローカルストレージテスト</h2>
+        <p>ローカルストレージを使用した基本機能のテスト</p>
+        
+        <button class="btn btn-primary" onclick="testLocalStorage()">ローカルストレージテスト実行</button>
+        <button class="btn btn-secondary" onclick="clearLocalStorage()">ローカルデータクリア</button>
+        
+        <div id="localStorage-result" class="result-box" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🚀 2. プロジェクト作成テスト</h2>
+        <p>仮プロジェクト作成機能のテスト</p>
+        
+        <button class="btn btn-primary" onclick="testProjectCreation()">テストプロジェクト作成</button>
+        <button class="btn btn-primary" onclick="viewCreatedProjects()">作成済みプロジェクト表示</button>
+        
+        <div id="project-creation-result" class="result-box" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>👨‍🔬 3. 研究者追加テスト</h2>
+        <p>プロジェクトへの研究者追加機能のテスト</p>
+        
+        <button class="btn btn-primary" onclick="testResearcherAddition()">テスト研究者追加</button>
+        <button class="btn btn-secondary" onclick="viewSelectedResearchers()">選択済み研究者表示</button>
+        
+        <div id="researcher-addition-result" class="result-box" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📤 4. マッチング依頼テスト</h2>
+        <p>マッチング依頼送信機能のテスト</p>
+        
+        <button class="btn btn-primary" onclick="testMatchingRequest()">テストマッチング依頼</button>
+        <button class="btn btn-secondary" onclick="checkProjectStatus()">プロジェクトステータス確認</button>
+        
+        <div id="matching-request-result" class="result-box" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔗 5. API統合テスト</h2>
+        <p>バックエンドAPIとの連携テスト（オプション）</p>
+        
+        <button class="btn btn-primary" onclick="testAPIIntegration()">API統合テスト</button>
+        <button class="btn btn-secondary" onclick="testAPIFallback()">フォールバックテスト</button>
+        
+        <div id="api-integration-result" class="result-box" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔄 6. フル統合テスト</h2>
+        <p>全機能を順番にテストする統合テスト</p>
+        
+        <button class="btn btn-primary" onclick="runFullIntegrationTest()">フル統合テスト実行</button>
+        
+        <div id="full-integration-result" class="result-box" style="display: none;"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="js/project-manager.js"></script>
+    <script>
+        // テスト用のデータ
+        const testProjectData = {
+            name: 'テストプロジェクト - AI材料探索',
+            description: '人工知能を活用した次世代材料の探索・開発プロジェクト。機械学習アルゴリズムを用いて新しい材料特性を予測し、実験による検証を行う。',
+            budget: 5000,
+            duration: 18,
+            requirements: 'AI・機械学習の専門知識、材料科学の基礎知識、Python/TensorFlowの実用経験',
+            keywords: 'AI, 機械学習, 材料科学, 深層学習, 材料設計'
+        };
+
+        const testResearchers = [
+            {
+                name: 'テスト研究者A',
+                affiliation: 'テスト大学 工学部',
+                url: 'https://test-researchmap.jp/researcher-a'
+            },
+            {
+                name: 'テスト研究者B', 
+                affiliation: 'テスト研究所',
+                url: 'https://test-researchmap.jp/researcher-b'
+            }
+        ];
+
+        // 1. ローカルストレージテスト
+        function testLocalStorage() {
+            const resultDiv = document.getElementById('localStorage-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                // テストデータを保存
+                const testData = { test: 'ローカルストレージテスト', timestamp: new Date().toISOString() };
+                localStorage.setItem('project-test', JSON.stringify(testData));
+                
+                // データを読み取り
+                const retrievedData = JSON.parse(localStorage.getItem('project-test'));
+                
+                if (retrievedData && retrievedData.test === 'ローカルストレージテスト') {
+                    resultDiv.innerHTML = `
+                        <div class="status status-success">✅ ローカルストレージテスト成功</div>
+                        <pre>${JSON.stringify(retrievedData, null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error('データの読み取りに失敗');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ ローカルストレージテスト失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('tempProjects');
+            localStorage.removeItem('project-test');
+            localStorage.removeItem('current_user_id');
+            alert('ローカルデータをクリアしました');
+        }
+
+        // 2. プロジェクト作成テスト
+        async function testProjectCreation() {
+            const resultDiv = document.getElementById('project-creation-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="status">🔄 プロジェクト作成中...</div>';
+            
+            try {
+                const project = await window.projectManager.createTempProject(testProjectData);
+                
+                resultDiv.innerHTML = `
+                    <div class="status status-success">✅ プロジェクト作成成功</div>
+                    <p><strong>プロジェクトID:</strong> ${project.id}</p>
+                    <p><strong>プロジェクト名:</strong> ${project.name}</p>
+                    <p><strong>ステータス:</strong> ${project.status}</p>
+                    <p><strong>作成日時:</strong> ${project.created_at}</p>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ プロジェクト作成失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function viewCreatedProjects() {
+            const resultDiv = document.getElementById('project-creation-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const projects = await window.projectManager.getTempProjects();
+                
+                if (projects.length === 0) {
+                    resultDiv.innerHTML = `
+                        <div class="status status-warning">⚠️ 作成済みプロジェクトはありません</div>
+                    `;
+                } else {
+                    let html = `<div class="status status-success">✅ ${projects.length}件のプロジェクトが見つかりました</div>`;
+                    projects.forEach((project, index) => {
+                        html += `
+                            <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 6px;">
+                                <h4>${index + 1}. ${project.name}</h4>
+                                <p>ID: ${project.id}</p>
+                                <p>ステータス: ${project.status}</p>
+                                <p>研究者: ${(project.selected_researchers || []).length}名</p>
+                            </div>
+                        `;
+                    });
+                    resultDiv.innerHTML = html;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ プロジェクト取得失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 3. 研究者追加テスト
+        async function testResearcherAddition() {
+            const resultDiv = document.getElementById('researcher-addition-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="status">🔄 研究者追加中...</div>';
+            
+            try {
+                // まずプロジェクトが存在するか確認
+                const projects = await window.projectManager.getTempProjects();
+                let targetProject;
+                
+                if (projects.length === 0) {
+                    // プロジェクトがない場合は作成
+                    targetProject = await window.projectManager.createTempProject(testProjectData);
+                } else {
+                    targetProject = projects[projects.length - 1];
+                }
+                
+                let successCount = 0;
+                
+                // テスト研究者を追加
+                for (const researcher of testResearchers) {
+                    const success = await window.projectManager.addResearcherToTempProject(targetProject.id, researcher);
+                    if (success) successCount++;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="status status-success">✅ 研究者追加テスト完了</div>
+                    <p><strong>対象プロジェクト:</strong> ${targetProject.name}</p>
+                    <p><strong>追加成功:</strong> ${successCount}/${testResearchers.length}名</p>
+                    <p><strong>追加した研究者:</strong></p>
+                    <ul>
+                        ${testResearchers.map(r => `<li>${r.name} (${r.affiliation})</li>`).join('')}
+                    </ul>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ 研究者追加失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function viewSelectedResearchers() {
+            const resultDiv = document.getElementById('researcher-addition-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const projects = await window.projectManager.getTempProjects();
+                if (projects.length === 0) {
+                    resultDiv.innerHTML = `<div class="status status-warning">⚠️ プロジェクトがありません</div>`;
+                    return;
+                }
+                
+                const latestProject = projects[projects.length - 1];
+                const researchers = latestProject.selected_researchers || [];
+                
+                if (researchers.length === 0) {
+                    resultDiv.innerHTML = `<div class="status status-warning">⚠️ 選択済み研究者はありません</div>`;
+                } else {
+                    let html = `<div class="status status-success">✅ ${researchers.length}名の研究者が選択済み</div>`;
+                    researchers.forEach((researcher, index) => {
+                        html += `
+                            <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                                ${index + 1}. ${researcher.name} (${researcher.affiliation})
+                                <br><small>追加日: ${new Date(researcher.added_at).toLocaleString()}</small>
+                            </div>
+                        `;
+                    });
+                    resultDiv.innerHTML = html;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ 研究者取得失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 4. マッチング依頼テスト
+        async function testMatchingRequest() {
+            const resultDiv = document.getElementById('matching-request-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="status">🔄 マッチング依頼送信中...</div>';
+            
+            try {
+                const projects = await window.projectManager.getTempProjects();
+                if (projects.length === 0) {
+                    throw new Error('テスト用プロジェクトが見つかりません');
+                }
+                
+                const latestProject = projects[projects.length - 1];
+                const testMessage = `テストマッチング依頼
+
+プロジェクト「${latestProject.name}」に関してご協力をお願いします。
+
+【プロジェクト概要】
+${latestProject.description}
+
+【期間】${latestProject.duration}ヶ月
+【予算】${latestProject.budget}万円
+
+よろしくお願いいたします。`;
+                
+                const result = await window.projectManager.sendMatchingRequest(latestProject.id, testMessage, 'normal');
+                
+                if (result.status === 'success') {
+                    resultDiv.innerHTML = `
+                        <div class="status status-success">✅ マッチング依頼送信成功</div>
+                        <p><strong>プロジェクト:</strong> ${latestProject.name}</p>
+                        <p><strong>メッセージ:</strong> ${testMessage.substring(0, 100)}...</p>
+                        ${result.fallback ? '<p><small>※ ローカルに保存されました</small></p>' : ''}
+                    `;
+                } else {
+                    throw new Error(result.message || 'マッチング依頼に失敗しました');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ マッチング依頼失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function checkProjectStatus() {
+            const resultDiv = document.getElementById('matching-request-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const projects = await window.projectManager.getTempProjects();
+                
+                let html = `<div class="status status-success">✅ プロジェクトステータス一覧</div>`;
+                projects.forEach((project, index) => {
+                    const statusText = {
+                        'draft': '作成中',
+                        'active': '進行中',
+                        'matching_requested': '依頼送信済み',
+                        'completed': '完了'
+                    }[project.status] || project.status;
+                    
+                    html += `
+                        <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                            <strong>${project.name}</strong><br>
+                            ステータス: ${statusText}<br>
+                            研究者数: ${(project.selected_researchers || []).length}名<br>
+                            最終更新: ${project.updated_at ? new Date(project.updated_at).toLocaleString() : '未更新'}
+                        </div>
+                    `;
+                });
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ ステータス確認失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 5. API統合テスト
+        async function testAPIIntegration() {
+            const resultDiv = document.getElementById('api-integration-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="status">🔄 API統合テスト実行中...</div>';
+            
+            try {
+                // API可用性チェック
+                const apiAvailable = await window.projectManager.checkAPIAvailability();
+                
+                if (apiAvailable) {
+                    resultDiv.innerHTML = `
+                        <div class="status status-success">✅ API統合テスト成功</div>
+                        <p>バックエンドAPIが利用可能です</p>
+                        <p>API URL: ${window.apiClient.getCurrentApiUrl()}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status status-warning">⚠️ API利用不可</div>
+                        <p>バックエンドAPIが利用できません。ローカルモードで動作します。</p>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ API統合テスト失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testAPIFallback() {
+            const resultDiv = document.getElementById('api-integration-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="status">🔄 フォールバックテスト実行中...</div>';
+            
+            try {
+                // 強制的にローカルモードに設定
+                const originalUseAPI = window.projectManager.useAPI;
+                window.projectManager.useAPI = false;
+                
+                // ローカルモードでプロジェクト作成
+                const project = await window.projectManager.createTempProject({
+                    name: 'フォールバックテストプロジェクト',
+                    description: 'APIが利用できない場合のローカルモードテスト'
+                });
+                
+                // 元の設定に戻す
+                window.projectManager.useAPI = originalUseAPI;
+                
+                resultDiv.innerHTML = `
+                    <div class="status status-success">✅ フォールバックテスト成功</div>
+                    <p>ローカルモードでプロジェクト作成が正常に動作しました</p>
+                    <p>作成されたプロジェクト: ${project.name}</p>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ フォールバックテスト失敗</div>
+                    <p>エラー: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 6. フル統合テスト
+        async function runFullIntegrationTest() {
+            const resultDiv = document.getElementById('full-integration-result');
+            resultDiv.style.display = 'block';
+            
+            const steps = [
+                '1. ローカルストレージクリア',
+                '2. API可用性チェック',
+                '3. テストプロジェクト作成',
+                '4. 研究者追加',
+                '5. マッチング依頼送信',
+                '6. 結果検証'
+            ];
+            
+            let currentStep = 0;
+            let results = [];
+            
+            try {
+                // ステップ1: ローカルストレージクリア
+                resultDiv.innerHTML = `<div class="status">🔄 ${steps[currentStep]}</div>`;
+                localStorage.removeItem('tempProjects');
+                localStorage.removeItem('current_user_id');
+                results.push('✅ ローカルストレージクリア完了');
+                currentStep++;
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // ステップ2: API可用性チェック
+                resultDiv.innerHTML = `<div class="status">🔄 ${steps[currentStep]}</div>`;
+                const apiAvailable = await window.projectManager.checkAPIAvailability();
+                results.push(`${apiAvailable ? '✅' : '⚠️'} API可用性: ${apiAvailable ? '利用可能' : 'ローカルモード'}`);
+                currentStep++;
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // ステップ3: テストプロジェクト作成
+                resultDiv.innerHTML = `<div class="status">🔄 ${steps[currentStep]}</div>`;
+                const project = await window.projectManager.createTempProject(testProjectData);
+                results.push(`✅ プロジェクト作成: ${project.name} (${project.id})`);
+                currentStep++;
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // ステップ4: 研究者追加
+                resultDiv.innerHTML = `<div class="status">🔄 ${steps[currentStep]}</div>`;
+                let addedResearchers = 0;
+                for (const researcher of testResearchers) {
+                    const success = await window.projectManager.addResearcherToTempProject(project.id, researcher);
+                    if (success) addedResearchers++;
+                }
+                results.push(`✅ 研究者追加: ${addedResearchers}/${testResearchers.length}名`);
+                currentStep++;
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // ステップ5: マッチング依頼送信
+                resultDiv.innerHTML = `<div class="status">🔄 ${steps[currentStep]}</div>`;
+                const testMessage = `フル統合テスト用マッチング依頼\n\nプロジェクト: ${project.name}\n実行日時: ${new Date().toLocaleString()}`;
+                const matchingResult = await window.projectManager.sendMatchingRequest(project.id, testMessage, 'normal');
+                results.push(`✅ マッチング依頼: ${matchingResult.status === 'success' ? '送信成功' : '送信失敗'}`);
+                currentStep++;
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // ステップ6: 結果検証
+                resultDiv.innerHTML = `<div class="status">🔄 ${steps[currentStep]}</div>`;
+                const finalProjects = await window.projectManager.getTempProjects();
+                const finalProject = finalProjects.find(p => p.id === project.id);
+                
+                const verification = {
+                    projectExists: !!finalProject,
+                    hasResearchers: finalProject ? (finalProject.selected_researchers || []).length > 0 : false,
+                    statusUpdated: finalProject ? finalProject.status === 'matching_requested' : false
+                };
+                
+                results.push(`✅ 検証完了: プロジェクト存在=${verification.projectExists}, 研究者=${verification.hasResearchers}, ステータス=${verification.statusUpdated}`);
+                
+                // 最終結果表示
+                const allSuccessful = results.every(r => r.startsWith('✅'));
+                
+                resultDiv.innerHTML = `
+                    <div class="status ${allSuccessful ? 'status-success' : 'status-warning'}">
+                        ${allSuccessful ? '🎉 フル統合テスト完全成功！' : '⚠️ フル統合テスト部分的成功'}
+                    </div>
+                    <h4>テスト結果詳細:</h4>
+                    <ul>
+                        ${results.map(result => `<li>${result}</li>`).join('')}
+                    </ul>
+                    <h4>作成されたデータ:</h4>
+                    <pre>${JSON.stringify({
+                        project: {
+                            id: project.id,
+                            name: project.name,
+                            status: finalProject ? finalProject.status : 'unknown',
+                            researchers: finalProject ? (finalProject.selected_researchers || []).length : 0
+                        },
+                        verification: verification
+                    }, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                results.push(`❌ エラー発生: ${error.message}`);
+                
+                resultDiv.innerHTML = `
+                    <div class="status status-error">❌ フル統合テスト失敗</div>
+                    <p><strong>失敗ステップ:</strong> ${steps[currentStep]}</p>
+                    <p><strong>エラー:</strong> ${error.message}</p>
+                    <h4>ここまでの結果:</h4>
+                    <ul>
+                        ${results.map(result => `<li>${result}</li>`).join('')}
+                    </ul>
+                `;
+            }
+        }
+        
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 プロジェクト機能統合テストページ読み込み完了');
+            
+            // 依存関係チェック
+            const dependencies = {
+                'config.js': typeof window.config !== 'undefined',
+                'api-client.js': typeof window.apiClient !== 'undefined',
+                'project-manager.js': typeof window.projectManager !== 'undefined'
+            };
+            
+            console.log('📦 依存関係チェック:', dependencies);
+            
+            const missingDeps = Object.keys(dependencies).filter(dep => !dependencies[dep]);
+            if (missingDeps.length > 0) {
+                document.body.insertAdjacentHTML('afterbegin', `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3>⚠️ 依存関係エラー</h3>
+                        <p>以下のファイルが正しく読み込まれていません:</p>
+                        <ul>${missingDeps.map(dep => `<li>${dep}</li>`).join('')}</ul>
+                        <p>テストを実行する前に、必要なJavaScriptファイルが正しく配置されているか確認してください。</p>
+                    </div>
+                `);
+            } else {
+                document.body.insertAdjacentHTML('afterbegin', `
+                    <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3>✅ 初期化完了</h3>
+                        <p>すべての依存関係が正しく読み込まれました。テストを開始できます。</p>
+                    </div>
+                `);
+            }
+        });
+    </script>
+</body>
+</html>
