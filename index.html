@@ -422,6 +422,129 @@
             background-color: #d1ecf1;
             color: #0c5460;
         }
+        
+        /* AI分析結果エリア用のマークダウンスタイル */
+        .ai-analysis-content h1,
+        .ai-analysis-content h2,
+        .ai-analysis-content h3,
+        .ai-analysis-content h4,
+        .ai-analysis-content h5,
+        .ai-analysis-content h6 {
+            color: #2c3e50;
+            margin: 20px 0 10px 0;
+            font-weight: 600;
+        }
+        
+        .ai-analysis-content h1 { font-size: 24px; }
+        .ai-analysis-content h2 { font-size: 20px; }
+        .ai-analysis-content h3 { font-size: 18px; }
+        .ai-analysis-content h4 { font-size: 16px; }
+        .ai-analysis-content h5 { font-size: 14px; }
+        .ai-analysis-content h6 { font-size: 12px; }
+        
+        .ai-analysis-content p {
+            margin: 10px 0;
+            line-height: 1.7;
+        }
+        
+        .ai-analysis-content ul,
+        .ai-analysis-content ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        .ai-analysis-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .ai-analysis-content code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .ai-analysis-content strong {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .ai-analysis-content em {
+            font-style: italic;
+            color: #495057;
+        }
+        
+        .ai-analysis-content hr {
+            margin: 25px 0;
+            border: none;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .ai-analysis-content a {
+            color: #667eea;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-bottom-color 0.3s ease;
+        }
+        
+        .ai-analysis-content a:hover {
+            border-bottom-color: #667eea;
+        }
+
+        /* モーダル内のマークダウンスタイル */
+        .modal-markdown-content h1,
+        .modal-markdown-content h2,
+        .modal-markdown-content h3,
+        .modal-markdown-content h4,
+        .modal-markdown-content h5,
+        .modal-markdown-content h6 {
+            color: #2c3e50;
+            margin: 20px 0 10px 0;
+            font-weight: 600;
+        }
+        
+        .modal-markdown-content h1 { font-size: 22px; }
+        .modal-markdown-content h2 { font-size: 18px; }
+        .modal-markdown-content h3 { font-size: 16px; }
+        .modal-markdown-content h4 { font-size: 14px; }
+        .modal-markdown-content h5 { font-size: 13px; }
+        .modal-markdown-content h6 { font-size: 12px; }
+        
+        .modal-markdown-content p {
+            margin: 10px 0;
+            line-height: 1.7;
+        }
+        
+        .modal-markdown-content ul,
+        .modal-markdown-content ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        
+        .modal-markdown-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .modal-markdown-content code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+        
+        .modal-markdown-content strong {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .modal-markdown-content em {
+            font-style: italic;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
@@ -1003,6 +1126,75 @@
         let lastSearchState = null;
         const SEARCH_STATE_EXPIRY = 30 * 60 * 1000; // 30分
         
+        // マークダウンテキストをHTMLに変換する関数
+        function convertMarkdownToHtml(text) {
+            if (!text) return '';
+            
+            // HTMLエスケープ
+            let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // マークダウンの変換
+            html = html
+                // 見出し（h1-h6）
+                .replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')
+                .replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>')
+                .replace(/^####\s+(.+)$/gm, '<h4>$1</h4>')
+                .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
+                .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+                .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
+                
+                // 太字
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/__(.+?)__/g, '<strong>$1</strong>')
+                
+                // 斜体
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/_(.+?)_/g, '<em>$1</em>')
+                
+                // インラインコード
+                .replace(/`(.+?)`/g, '<code style="background-color: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>')
+                
+                // 水平線
+                .replace(/^---+$/gm, '<hr style="margin: 20px 0; border: none; border-top: 2px solid #e9ecef;">')
+                .replace(/^___+$/gm, '<hr style="margin: 20px 0; border: none; border-top: 2px solid #e9ecef;">')
+                .replace(/^\*\*\*+$/gm, '<hr style="margin: 20px 0; border: none; border-top: 2px solid #e9ecef;">')
+                
+                // リンク
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #667eea; text-decoration: none;">$1</a>')
+                
+                // 番号付きリスト
+                .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+                
+                // 箇条書きリスト
+                .replace(/^[-*+]\s+(.+)$/gm, '<li>$1</li>')
+                
+                // 改行を<br>に変換（段落の区切りは保持）
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            
+            // リストの処理
+            html = html.replace(/(<li>.*?<\/li>)/gs, function(match) {
+                if (!match.includes('<ol>') && !match.includes('<ul>')) {
+                    if (match.match(/^\d+\./)) {
+                        return '<ol style="margin: 10px 0; padding-left: 30px;">' + match + '</ol>';
+                    } else {
+                        return '<ul style="margin: 10px 0; padding-left: 30px;">' + match + '</ul>';
+                    }
+                }
+                return match;
+            });
+            
+            // 段落の処理
+            if (!html.startsWith('<')) {
+                html = '<p>' + html + '</p>';
+            }
+            
+            return html;
+        }
+        
         // 検索方法変更時の処理
         window.onSearchMethodChange = function() {
             const searchMethod = document.getElementById('search-method').value;
@@ -1093,7 +1285,8 @@
                             
                             ${researcher.llm_summary ? `
                                 <div class="ai-summary">
-                                    <strong>AI関連性分析:</strong> ${researcher.llm_summary}
+                                    <strong>AI関連性分析:</strong> 
+                                    <div class="ai-analysis-content">${convertMarkdownToHtml(researcher.llm_summary)}</div>
                                 </div>
                             ` : ''}
                             
@@ -1149,7 +1342,8 @@
                             ${result.project_title ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${result.project_title}</div>` : ''}
                             
                             <div class="ai-summary">
-                                <strong>AI関連性分析:</strong> ${result.summary}
+                                <strong>AI関連性分析:</strong> 
+                                <div class="ai-analysis-content">${convertMarkdownToHtml(result.summary)}</div>
                             </div>
                             
                             ${isYoungResearcher && youngReasons.length > 0 ? `
@@ -1309,7 +1503,8 @@
                         
                         ${researcher.llm_summary ? `
                             <div class="ai-summary">
-                                <strong>🤖 AI要約:</strong> ${researcher.llm_summary}
+                                <strong>🤖 AI要約:</strong> 
+                                <div class="ai-analysis-content">${convertMarkdownToHtml(researcher.llm_summary)}</div>
                             </div>
                         ` : ''}
                         
@@ -1903,8 +2098,8 @@
                             
                             <div style="margin-bottom: 20px;">
                                 <h4 style="color: #495057; margin-bottom: 15px;">📄 AI分析結果</h4>
-                                <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; max-height: 300px; overflow-y: auto;">
-                                    ${analysis.detailed_analysis.replace(/\n/g, '<br>')}
+                                <div class="modal-markdown-content" style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; max-height: 300px; overflow-y: auto;">
+                                    ${convertMarkdownToHtml(analysis.detailed_analysis)}
                                 </div>
                             </div>
                             

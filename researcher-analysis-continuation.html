@@ -1,0 +1,151 @@
+            selectedProjectId = projectId;
+            
+            // 追加ボタンを有効化
+            document.getElementById('add-to-project-btn').disabled = false;
+        }
+
+        // 選択されたプロジェクトに研究者を追加
+        function addResearcherToSelectedProject() {
+            if (!currentResearcher || !selectedProjectId) {
+                alert('プロジェクトが選択されていません');
+                return;
+            }
+            
+            try {
+                // プロジェクトを取得
+                const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+                const project = tempProjects.find(p => p.id === selectedProjectId);
+                
+                if (!project) {
+                    alert('選択されたプロジェクトが見つかりません');
+                    return;
+                }
+                
+                // 研究者情報を整理
+                const researcherData = {
+                    name: currentResearcher.name,
+                    affiliation: currentResearcher.affiliation,
+                    url: currentResearcher.url || '',
+                    query: currentResearcher.query || '',
+                    added_at: new Date().toISOString(),
+                    analysis_score: currentResearcher.analysis_score,
+                    has_analysis: currentResearcher.has_analysis || false
+                };
+                
+                // 重複チェック
+                if (!project.selected_researchers) {
+                    project.selected_researchers = [];
+                }
+                
+                const exists = project.selected_researchers.some(r => r.name === researcherData.name);
+                if (exists) {
+                    alert('この研究者は既にプロジェクトに追加されています');
+                    return;
+                }
+                
+                // 研究者を追加
+                project.selected_researchers.push(researcherData);
+                project.updated_at = new Date().toISOString();
+                
+                // ローカルストレージに保存
+                localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+                
+                alert(`「${researcherData.name}」を「${project.name}」に追加しました`);
+                
+                // モーダルを閉じる
+                closeProjectSelectModal();
+                
+            } catch (error) {
+                console.error('研究者追加エラー:', error);
+                alert('研究者の追加に失敗しました: ' + error.message);
+            }
+        }
+
+        // モーダルから新規プロジェクト作成
+        function createNewProjectFromModal() {
+            // 研究者情報を一時保存
+            if (currentResearcher) {
+                sessionStorage.setItem('pendingResearcher', JSON.stringify(currentResearcher));
+            }
+            
+            // プロジェクト作成画面に遷移
+            window.location.href = 'project-create.html';
+        }
+        
+        // AI詳細分析を実行する関数
+        async function runDetailedAnalysis(analysisId) {
+            try {
+                // 保存済み分析を取得
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+                
+                if (!analysis) {
+                    alert('分析データが見つかりません');
+                    return;
+                }
+                
+                // 必要な情報があるかチェック
+                if (!analysis.researchmap_url || !analysis.query) {
+                    alert('AI詳細分析に必要な情報（ResearchMap URLまたは検索クエリ）が不足しています');
+                    return;
+                }
+                
+                // ボタンを無効化
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '🔄 分析実行中...';
+                
+                // API呼び出し
+                const response = await fetch(`${apiClient.baseURL}/api/analyze-researcher`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        researchmap_url: analysis.researchmap_url,
+                        query: analysis.query,
+                        researcher_basic_info: {
+                            name_ja: analysis.researcher_name
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.analysis) {
+                    // 分析結果を既存のデータに統合
+                    analysis.analysis_result = result.analysis;
+                    analysis.relevance_score = result.analysis.scores?.total || analysis.relevance_score;
+                    analysis.affiliation = result.analysis.affiliation || analysis.affiliation;
+                    analysis.updated_at = new Date().toISOString();
+                    
+                    // ローカルストレージに保存
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                    
+                    alert('✅ AI詳細分析が完了しました！');
+                    
+                    // 一覧を再読み込み
+                    await loadSavedAnalyses();
+                    
+                } else {
+                    throw new Error(result.error || 'AI詳細分析に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('AI詳細分析エラー:', error);
+                alert(`❌ AI詳細分析に失敗しました: ${error.message}`);
+                
+                // ボタンを元に戻す
+                const button = event.target;
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+    </script>
+</body>
+</html>
