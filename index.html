@@ -1753,11 +1753,14 @@ async function generateSingleSummary(researcherId, researchmapUrl, query) { // q
             const params = state.params;
             document.getElementById('api-search-input').value = params.query || '';
             document.getElementById('search-method').value = params.method || 'semantic';
-            document.getElementById('max-results').value = params.maxResults || 5;
-            document.getElementById('max-results-display').textContent = params.maxResults || 5;
+            const maxResultsEl_state = document.getElementById('max-results');
+            if (maxResultsEl_state) maxResultsEl_state.value = params.maxResults || 5;
+            const maxResultsDisplayEl_state = document.getElementById('max-results-display');
+            if (maxResultsDisplayEl_state) maxResultsDisplayEl_state.textContent = params.maxResults || 5;
             
             document.getElementById('llm-expansion').checked = params.useLLMExpansion || false;
-            document.getElementById('llm-summary').checked = params.useLLMSummary !== undefined ? params.useLLMSummary : true;
+            const llmSummaryEl_state = document.getElementById('llm-summary');
+            if (llmSummaryEl_state) llmSummaryEl_state.checked = params.useLLMSummary !== undefined ? params.useLLMSummary : true;
             document.getElementById('young-researcher-filter').checked = params.youngResearcherFilter || false;
             
             if (params.universityFilter && params.universityFilter.length > 0) {
