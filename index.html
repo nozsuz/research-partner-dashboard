@@ -45,6 +45,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            text-decoration: none;
+            color: white;
         }
         
         .menu-item:hover {
@@ -505,12 +507,15 @@
             <h1>🤝 リサーチパートナー</h1>
             <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
             
-            <div class="menu-item active" onclick="showPage('researchers', event)">
+            <a href="index.html" class="menu-item active">
                 🔍 研究者検索
-            </div>
-            <div class="menu-item" onclick="window.location.href='researcher-analysis.html'">
+            </a>
+            <a href="researcher-analysis.html" class="menu-item">
                 📂 保存済み分析
-            </div>
+            </a>
+            <a href="project.html" class="menu-item">
+                📊 マイプロジェクト
+            </a>
             
             <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
             
@@ -602,7 +607,7 @@
             </div>
 
             <div class="footer">
-                © 2024 Your Company Name. All Rights Reserved. | このダッシュボードはモックアップです。
+                © 2025 Your Company Name. All Rights Reserved. | このダッシュボードはモックアップです。
             </div>
         </div>
     </div>
@@ -1930,37 +1935,6 @@ window.displayUniversityList = function() {
             
             // プロジェクト選択モーダルを開く
             openProjectSelectModal(researcher);
-        }
-
-        window.showPage = function(page, event) {
-            console.log('🔄 ページ切り替え:', page);
-
-            // すべてのページを非表示
-            const pages = document.querySelectorAll('.page');
-            pages.forEach(p => p.classList.add('hidden'));
-
-            // 選択されたページを表示
-            const targetPage = document.getElementById(page + '-page');
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-                console.log('✅ ページ表示:', page);
-            } else {
-                console.error('❌ ページが見つかりません:', page + '-page');
-                return; // ページがなければ何もしない
-            }
-
-            // メニューアイテムのactive状態を更新
-            const menuItems = document.querySelectorAll('.menu-item');
-            menuItems.forEach(item => item.classList.remove('active'));
-            
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('active');
-            }
-
-            // 特定ページでの追加処理
-            if (page === 'researchers') {
-                checkAPIHealth();
-            }
         }
 
         window.showLogoutMessage = function() {
