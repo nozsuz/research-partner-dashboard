@@ -1770,7 +1770,7 @@ async function generateSingleSummary(researcherId, researchmapUrl) {
             console.log('🗑️ 検索フォームと結果をクリアしました');
         }
 
-// 実際のAPI検索関数
+// 実際のAPI検索関数（修正版）
 window.performAPISearch = async function() {
     const searchInput = document.getElementById('api-search-input');
     const searchQuery = searchInput.value.trim();
@@ -1780,11 +1780,13 @@ window.performAPISearch = async function() {
         return;
     }
 
+    // --- ▼▼▼ ここから修正 ▼▼▼ ---
     // 検索オプションの取得
     const searchMethod = document.getElementById('search-method').value;
     const useLLMExpansion = document.getElementById('llm-expansion').checked;
-    const useLLMSummary = document.getElementById('llm-summary').checked;
+    // const useLLMSummary = document.getElementById('llm-summary').checked; // ← エラーの原因となっていた行を削除
     const youngResearcherFilter = document.getElementById('young-researcher-filter').checked;
+    // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
     const resultsContainer = document.getElementById('api-search-results');
     
@@ -1797,21 +1799,22 @@ window.performAPISearch = async function() {
     `;
 
     try {
+        // --- ▼▼▼ ここから修正 ▼▼▼ ---
         // API検索実行 (maxResultsを100に固定)
         const searchParams = {
             query: searchQuery,
             method: searchMethod,
-            maxResults: 100, // ★★★ 最大件数を100に固定 ★★★
+            maxResults: 100,
             useLLMExpansion: useLLMExpansion,
-            useLLMSummary: useLLMSummary,
+            // useLLMSummary: useLLMSummary, // ← パラメータからも削除
             useInternalEvaluation: false,
             youngResearcherFilter: youngResearcherFilter,
             universityFilter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
         };
+        // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
         const apiResponse = await apiClient.searchResearchers(searchParams);
         
-        // ★★★ 結果をグローバル変数に保存し、ページ描画関数を呼び出す ★★★
         fullSearchResults = apiResponse.results || [];
         currentPage = 1;
 
