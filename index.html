@@ -1400,6 +1400,23 @@
                 return;
             }
             
+            // 検索結果から大学リストを抽出し、フィルターを自動適用する
+            if (apiResponse.results && apiResponse.results.length > 0) {
+                // 1. Setを使って重複しない大学名のリストを作成
+                const uniqueUniversities = new Set();
+                apiResponse.results.forEach(researcher => {
+                    const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en;
+                    if (affiliation) {
+                        uniqueUniversities.add(affiliation);
+                    }
+                });
+                // 2. Setを配列に変換し、選択状態の変数にセット
+                window.selectedUniversities = Array.from(uniqueUniversities);
+                // 3. 大学フィルターの表示を更新
+                displayUniversityList(); 
+                console.log('✅ 検索結果にヒットした大学でフィルターを自動適用しました:', window.selectedUniversities);
+            }
+            
             // 内部評価モードの場合
             if (apiResponse.evaluation_mode === 'internal' && apiResponse.evaluated_results) {
                 displayInternalEvaluationResults(apiResponse);
