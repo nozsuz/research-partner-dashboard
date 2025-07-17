@@ -1461,50 +1461,48 @@ window.displayAPISearchResults = function(apiResponse) {
     `;
 
     // 3. ページに表示する研究者カードの生成
-    paginatedResults.forEach(researcher => {
-        const name = researcher.name_ja || researcher.name_en || '名前不明';
-        const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
-        const keywords = researcher.research_keywords_ja || 'N/A';
-        const fields = researcher.research_fields_ja || 'N/A';
-        const profile = researcher.profile_ja || 'N/A';
-        const paper = researcher.paper_title_ja_first || 'N/A';
-        const project = researcher.project_title_ja_first || 'N/A';
-        const researchmapUrl = researcher.researchmap_url || '#';
-        const isYoungResearcher = researcher.is_young_researcher;
-        const youngReasons = researcher.young_researcher_reasons || [];
-        
-        // ボタンやコンテナ用に一意のIDを生成
-        const researcherId = (researchmapUrl.split('/').pop() || (name + affiliation)).replace(/[^a-zA-Z0-9]/g, '');
+paginatedResults.forEach(researcher => {
+    const name = researcher.name_ja || researcher.name_en || '名前不明';
+    const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+    const keywords = researcher.research_keywords_ja || 'N/A';
+    const fields = researcher.research_fields_ja || 'N/A';
+    const profile = researcher.profile_ja || 'N/A';
+    const paper = researcher.paper_title_ja_first || 'N/A';
+    const project = researcher.project_title_ja_first || 'N/A';
+    const researchmapUrl = researcher.researchmap_url || '#';
+    const isYoungResearcher = researcher.is_young_researcher;
+    const youngReasons = researcher.young_researcher_reasons || [];
+    const researcherId = (researchmapUrl.split('/').pop() || (name + affiliation)).replace(/[^a-zA-Z0-9]/g, '');
 
-        html += `
-            <div class="researcher-card" id="card-${researcherId}">
-                <div class="researcher-name">
-                    ${name} (${affiliation})
-                    ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
-                </div>
-                
-                ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
-                ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
-                ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
-                ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
-                ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
-                
-                ${isYoungResearcher && youngReasons.length > 0 ? `
-                    <div class="young-researcher-info">
-                        <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
-                    </div>
-                ` : ''}
-
-                <div id="summary-container-${researcherId}" class="ai-summary" style="display: none; margin-top: 15px;"></div>
-                
-                <div class="button-group">
-                     <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}')">🤖 AI要約を生成</button>
-                     <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
-                     <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
-                </div>
+    html += `
+        <div class="researcher-card" id="card-${researcherId}">
+            <div class="researcher-name">
+                ${name} (${affiliation})
+                ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
             </div>
-        `;
-    });
+            
+            ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
+            ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
+            ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+            ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+            ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
+            
+            ${isYoungResearcher && youngReasons.length > 0 ? `
+                <div class="young-researcher-info">
+                    <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
+                </div>
+            ` : ''}
+
+            <div id="summary-container-${researcherId}" class="ai-summary" style="display: none; margin-top: 15px;"></div>
+            
+            <div class="button-group">
+                 <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}', '${apiResponse.query.replace(/'/g, "\\'")}')">🤖 AI要約を生成</button>
+                 <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
+                 <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
+            </div>
+        </div>
+    `;
+});
 
     // 4. ページネーションボタンの生成
     if (totalPages > 1) {
@@ -1534,7 +1532,7 @@ window.changePage = function(page) {
  * @param {string} researcherId - 研究者を一意に特定するID
  * @param {string} researchmapUrl - 研究者のResearchMap URL
  */
-async function generateSingleSummary(researcherId, researchmapUrl) {
+async function generateSingleSummary(researcherId, researchmapUrl, query) { // query引数を追加
     const container = document.getElementById(`summary-container-${researcherId}`);
     const card = document.getElementById(`card-${researcherId}`);
     const button = card.querySelector('button[onclick*="generateSingleSummary"]');
@@ -1544,18 +1542,20 @@ async function generateSingleSummary(researcherId, researchmapUrl) {
         return;
     }
 
-    // ローディング表示
     container.style.display = 'block';
     container.innerHTML = `<strong>🤖 AI要約を生成中...</strong><div class="spinner" style="width: 15px; height: 15px; margin: 10px auto 0;"></div>`;
     button.disabled = true;
     button.textContent = '生成中...';
 
     try {
-        // バックエンドに新しいAPIエンドポイント /api/generate-summary を想定
         const response = await fetch(`${apiClient.baseURL}/api/generate-summary`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ researchmap_url: researchmapUrl })
+            // ▼▼▼ body に query を追加 ▼▼▼
+            body: JSON.stringify({ 
+                researchmap_url: researchmapUrl,
+                query: query 
+            })
         });
 
         if (!response.ok) {
@@ -1567,14 +1567,14 @@ async function generateSingleSummary(researcherId, researchmapUrl) {
 
         if (data.status === 'success' && data.summary) {
             container.innerHTML = `<strong>🤖 AI要約:</strong><div class="ai-analysis-content" style="margin-top: 5px;">${convertMarkdownToHtml(data.summary)}</div>`;
-            button.style.display = 'none'; // 成功したらボタンを隠す
+            button.style.display = 'none';
         } else {
             throw new Error(data.error || '要約の生成に失敗しました。');
         }
 
     } catch (error) {
         container.innerHTML = `<strong style="color: red;">❌ エラー:</strong> ${error.message}`;
-        button.disabled = false; // エラーなら再度ボタンを押せるようにする
+        button.disabled = false;
         button.textContent = '再度試す';
     }
 }
