@@ -1394,14 +1394,60 @@
         }
         
         // =====================================================================
-        // プロジェクト関連（機能縮小版・必要に応じて復活させる）
+        // プロジェクト関連
         // =====================================================================
-        function loadTempProjects() {
-            const listContainer = document.getElementById('temp-projects-list');
-            if(!listContainer) return;
-            // このデモではlocalStorageの機能は省略
-            listContainer.innerHTML = '<p style="color: #7f8c8d;">仮プロジェクト機能は現在無効です。</p>';
-        }
+
+function loadTempProjects() {
+    console.log('📋 loadTempProjects関数実行開始');
+    
+    // ローカルストレージからプロジェクトデータを取得
+    const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+    
+    const listContainer = document.getElementById('temp-projects-list');
+    if (!listContainer) {
+        console.error('❌ temp-projects-listエレメントが見つかりません');
+        return;
+    }
+    
+    // プロジェクトがない場合の表示
+    if (tempProjects.length === 0) {
+        listContainer.innerHTML = '<p style="color: #7f8c8d;">仮プロジェクトはありません。</p>';
+        return;
+    }
+    
+    // プロジェクトカードのHTMLを生成
+    let html = '';
+    tempProjects.forEach((project) => {
+        const statusText = project.status === 'matching_requested' ? '依頼送信済み' : '作成中';
+        const statusClass = project.status === 'matching_requested' ? 'status-completed' : 'status-planned';
+        
+        html += `
+            <div class="project-card">
+                <h4>${project.name}</h4>
+                <div style="display: flex; gap: 20px; margin: 15px 0; flex-wrap: wrap; font-size: 14px;">
+                    <div>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div>作成日: ${new Date(project.created_at).toLocaleDateString('ja-JP')}</div>
+                    <div>研究者候補: ${(project.selected_researchers || []).length}名</div>
+                </div>
+                <p style="font-size: 15px;">${project.description.substring(0, 100)}${project.description.length > 100 ? '...' : ''}</p>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <a href="temp-project.html?id=${project.id}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none;">
+                        管理画面へ
+                    </a>
+                    <button class="btn btn-danger" onclick="deleteTempProject('${project.id}', '${project.name.replace(/'/g, "\\'")}')" 
+                            style="min-width: 120px; background-color: #dc3545; color: white;">
+                        🗑️ 削除
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    listContainer.innerHTML = html;
+    console.log('✅ 仮プロジェクト一覧の表示完了');
+}
 
         // =====================================================================
         // 初期化処理
