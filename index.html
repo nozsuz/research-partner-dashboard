@@ -590,40 +590,40 @@
 <body>
     <div class="container">
         <!-- Sidebar -->
-        <div class="sidebar">
-            <h1>🤝 リサーチパートナー</h1>
-            <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
-            
-            <div class="menu-item active" onclick="showPage('researchers')">
-                🔍 研究者検索
-            </div>
-            <div class="menu-item" onclick="window.location.href='researcher-analysis.html'">
-                📂 保存済み分析
-            </div>
-            <div class="menu-item" onclick="showPage('projects')">
-                📊 マイプロジェクト
-            </div>
-            <div class="menu-item" onclick="showPage('contracts')">
-                📄 契約・知財サポート
-            </div>
-            <div class="menu-item" onclick="showPage('funding')">
-                💰 資金調達サポート
-            </div>
-            <div class="menu-item" onclick="showPage('settings')">
-                ⚙️ アカウント設定
-            </div>
-            
-            <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
-            
-            <div class="project-info">
-                <h4>進行中のプロジェクト（例）</h4>
-                <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; margin-top: 10px;">
-                    進行中: 次世代AI材料探索プロジェクト
-                </div>
-            </div>
-            
-            <button class="logout-btn" onclick="showLogoutMessage()">ログアウト</button>
+<div class="sidebar">
+    <h1>🤝 リサーチパートナー</h1>
+    <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
+    
+    <div class="menu-item active" onclick="showPage('researchers', this)">
+        🔍 研究者検索
+    </div>
+    <div class="menu-item" onclick="window.location.href='researcher-analysis.html'">
+        📂 保存済み分析
+    </div>
+    <div class="menu-item" onclick="showPage('projects', this)">
+        📊 マイプロジェクト
+    </div>
+    <div class="menu-item" onclick="showPage('contracts', this)">
+        📄 契約・知財サポート
+    </div>
+    <div class="menu-item" onclick="showPage('funding', this)">
+        💰 資金調達サポート
+    </div>
+    <div class="menu-item" onclick="showPage('settings', this)">
+        ⚙️ アカウント設定
+    </div>
+    
+    <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
+    
+    <div class="project-info">
+        <h4>進行中のプロジェクト（例）</h4>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; margin-top: 10px;">
+            進行中: 次世代AI材料探索プロジェクト
         </div>
+    </div>
+    
+    <button class="logout-btn" onclick="showLogoutMessage()">ログアウト</button>
+</div>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -2591,7 +2591,7 @@ window.displayUniversityList = function() {
             openProjectSelectModal(researcher);
         }
 
-window.showPage = function(page) {
+window.showPage = function(page, clickedElement) {
     console.log('🔄 ページ切り替え:', page);
     
     // すべてのページを非表示
@@ -2602,10 +2602,29 @@ window.showPage = function(page) {
     const targetPage = document.getElementById(page + '-page');
     if (targetPage) {
         targetPage.classList.remove('hidden');
-        console.log('✅ ページ表示:', page);
     } else {
         console.error('❌ ページが見つかりません:', page + '-page');
     }
+    
+    // メニューアイテムのactive状態を更新
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => item.classList.remove('active'));
+    
+    // クリックされた要素がメニューアイテムなら、activeクラスを追加
+    if (clickedElement && clickedElement.classList.contains('menu-item')) {
+        clickedElement.classList.add('active');
+    }
+    
+    // 特定ページでの追加処理
+    if (page === 'projects') {
+        console.log('📋 プロジェクトページ表示時に一覧を更新');
+        setTimeout(() => {
+            if (typeof loadTempProjects === 'function') {
+                loadTempProjects();
+            }
+        }, 100);
+    }
+}
     
     // メニューアイテムのactive状態を更新
     const menuItems = document.querySelectorAll('.menu-item');
