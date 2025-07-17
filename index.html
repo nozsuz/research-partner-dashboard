@@ -1413,8 +1413,9 @@ window.displayAPISearchResults = function(apiResponse) {
         return;
     }
 
-    // ★★★ ここからが修正・追加箇所 ★★★
-    let html = ''; // 表示するHTML全体を格納する変数
+    // ▼▼▼【復活させる機能】ここから ▼▼▼
+    // 表示するHTML全体を格納する変数
+    let html = ''; 
 
     // 選択中の大学フィルタがある場合、その情報を表示するエリアを生成
     if (window.selectedUniversities && window.selectedUniversities.length > 0) {
@@ -1431,16 +1432,18 @@ window.displayAPISearchResults = function(apiResponse) {
             </div>
         `;
     }
-    // ★★★ ここまでが修正・追加箇所 ★★★
+    // ▲▲▲【復活させる機能】ここまで ▲▲▲
 
     // 内部評価モードの場合の処理
     if (apiResponse.evaluation_mode === 'internal' && apiResponse.evaluated_results) {
+        // この関数は変更なし
         displayInternalEvaluationResults(apiResponse);
         return;
     }
     
     // 検索結果が0件の場合の表示
     if (!apiResponse.results || apiResponse.results.length === 0) {
+        // html変数を加算して、絞り込み状況と「結果なし」メッセージを両方表示
         resultsContainer.innerHTML = html + `
             <div class="alert alert-info">
                 「${apiResponse.query}」に該当する研究者は見つかりませんでした。
@@ -1482,7 +1485,6 @@ window.displayAPISearchResults = function(apiResponse) {
 
     // 研究者カードの生成 (以降のコードは変更なし)
     apiResponse.results.forEach((researcher, index) => {
-        // ... (既存の研究者カード生成ロジック) ...
         const name = researcher.name_ja || researcher.name_en || '名前不明';
         const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
         const keywords = researcher.research_keywords_ja || 'N/A';
@@ -1539,8 +1541,7 @@ window.displayAPISearchResults = function(apiResponse) {
 
     // 最終的に生成したHTMLをコンテナにセット
     resultsContainer.innerHTML = html;
-}
-
+};
         // 検索状態保存・復元機能
         function saveSearchState(searchParams, apiResponse) {
             const searchState = {
