@@ -1421,31 +1421,75 @@
             
             resultsContainer.innerHTML = html;
         }
-        
-// API検索結果の表示関数 (全機能統合 最終版)
+/**
+ * 所属名の文字列を大学名に正規化（整形）する関数
+ * @param {string} name - 整形したい元の所属名
+ * @returns {string|null} - 整形後の大学名、またはnull
+ */
+function normalizeUniversityName(name) {
+    if (!name || typeof name !== 'string') {
+        return null;
+    }
+    let normalized = name;
+
+    // 1. 特殊な大学統合ルールを先に適用
+    if (normalized.includes('東京工業大学') || normalized.includes('東京医科歯科大学')) {
+        return '東京科学大学';
+    }
+    if (normalized.includes('東海国立大学')) {
+        return '名古屋大学';
+    }
+
+    // 2. 接頭辞（法人名など）を削除
+    normalized = normalized.replace(/^(国立大学法人|学校法人|公立大学法人)\s*/, '');
+
+    // 3. 複数大学名が含まれる場合、最初のものを採用
+    normalized = normalized.split('／')[0];
+
+    // 4. 大学名以降の組織名や役職名を削除
+    normalized = normalized.replace(/\s*(大学院|大学病院|病院|研究院|研究センター|研究科|学部|附属|特任准教授|教授|准教授|客員|機構|センター).*$/, '');
+
+    // 5. 前後の空白を削除
+    normalized = normalized.trim();
+    
+    // 6. 最終チェック（「大学」で終わるか）
+    if (normalized.endsWith('大学')) {
+        return normalized;
+    }
+    
+    return null; // 有効な大学名でない場合はnullを返す
+}        
+// API検索結果の表示関数 (大学名正規化対応版)
 window.displayAPISearchResults = function(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');
     
-    // 自動フィルタ機能
     if (fullSearchResults && fullSearchResults.length > 0) {
+        // ▼▼▼ この部分を修正 ▼▼▼
         const uniqueUniversities = new Set(
-            fullSearchResults.map(r => r.main_affiliation_name_ja || r.main_affiliation_name_en).filter(Boolean)
+            fullSearchResults.map(r => {
+                // 生の所属名を正規化関数にかける
+                return normalizeUniversityName(r.main_affiliation_name_ja || r.main_affiliation_name_en);
+            }).filter(Boolean) // nullになったものを除外
         );
+        // ▲▲▲ 修正ここまで ▲▲▲
+
         window.selectedUniversities = Array.from(uniqueUniversities);
         displayUniversityList(); 
     }
 
-    // ページネーションのロジック
+    // (以降のコードは変更なし)
     const totalResults = fullSearchResults.length;
+    // ... (以下、関数の残りの部分は同じです) ...
+    // ...
+    // ...
+
     const totalPages = Math.ceil(totalResults / resultsPerPage);
     const startIndex = (currentPage - 1) * resultsPerPage;
     const endIndex = startIndex + resultsPerPage;
     const paginatedResults = fullSearchResults.slice(startIndex, endIndex);
 
-    // --- 表示HTMLの生成開始 ---
     let html = '';
 
-    // 1. 絞り込み大学の表示
     if (window.selectedUniversities && window.selectedUniversities.length > 0) {
         html += `
             <div class="alert alert-info" style="margin-bottom: 20px; border-left: 4px solid #667eea;">
@@ -1455,7 +1499,6 @@ window.displayAPISearchResults = function(apiResponse) {
         `;
     }
 
-    // 2. 検索結果の件数表示
     if (totalResults === 0) {
         html += `<div class="alert alert-info">「${apiResponse.query}」に該当する研究者は見つかりませんでした。</div>`;
         resultsContainer.innerHTML = html;
@@ -1469,7 +1512,6 @@ window.displayAPISearchResults = function(apiResponse) {
         </div>
     `;
 
-    // ▼▼▼ AIキーワード拡張の表示（復活）▼▼▼
     if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
         const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
         html += `
@@ -1481,9 +1523,7 @@ window.displayAPISearchResults = function(apiResponse) {
             </div>
         `;
     }
-    // ▲▲▲ AIキーワード拡張の表示（復活）▲▲▲
 
-    // 3. ページに表示する研究者カードの生成
     paginatedResults.forEach(researcher => {
         const name = researcher.name_ja || researcher.name_en || '名前不明';
         const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
@@ -1529,7 +1569,6 @@ window.displayAPISearchResults = function(apiResponse) {
         `;
     });
 
-    // 4. ページネーションボタンの生成
     if (totalPages > 1) {
         html += '<div class="pagination">';
         html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; 前へ</button>`;
