@@ -626,10 +626,6 @@
                             <input type="text" id="university-search-input" class="form-control" 
                                 placeholder="大学名を検索..." oninput="displayUniversityList()">
                         </div>
-                        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
-                            <button class="btn btn-secondary" onclick="selectAllUniversities(true)" style="font-size: 12px; flex: 1;">全て選択</button>
-                            <button class="btn btn-secondary" onclick="selectAllUniversities(false)" style="font-size: 12px; flex: 1;">全て解除</button>
-                        </div>
                         <div id="university-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; background: #f8f9fa;">
                             
                         </div>
@@ -1943,35 +1939,7 @@ window.displayUniversityList = function() {
     
     container.innerHTML = html;
 };
-        /**
- * 表示されている大学のチェックボックスを全て選択、または全て解除する関数
- * @param {boolean} shouldSelect - trueなら全て選択、falseなら全て解除
- */
-window.selectAllUniversities = function(shouldSelect) {
-    const container = document.getElementById('university-list-container');
-    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-
-    checkboxes.forEach(checkbox => {
-        // チェック状態を更新
-        checkbox.checked = shouldSelect;
         
-        const universityName = checkbox.value;
-        const index = window.selectedUniversities.indexOf(universityName);
-
-        if (shouldSelect) {
-            // 「全て選択」の場合、リストになければ追加
-            if (index === -1) {
-                window.selectedUniversities.push(universityName);
-            }
-        } else {
-            // 「全て解除」の場合、リストにあれば削除
-            if (index > -1) {
-                window.selectedUniversities.splice(index, 1);
-            }
-        }
-    });
-    console.log('選択中の大学リストが更新されました:', window.selectedUniversities);
-};
         // 大学フィルターの切り替え
         window.toggleUniversityFilter = function(universityName) {
             const index = window.selectedUniversities.indexOf(universityName);
