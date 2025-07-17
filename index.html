@@ -545,6 +545,46 @@
             font-style: italic;
             color: #495057;
         }
+        .filter-active-badge {
+            display: inline-block;
+            background-color: #e3f2fd;
+            color: #0c5460;
+            padding: 5px 12px;
+            border-radius: 15px;
+            margin: 5px 5px 5px 0;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: 1px solid #bee5eb;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            gap: 8px;
+        }
+        .pagination button {
+            background: white;
+            border: 1px solid #dee2e6;
+            color: #667eea;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .pagination button:hover {
+            background-color: #f8f9fa;
+            border-color: #667eea;
+        }
+        .pagination button.active {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .pagination button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
@@ -611,11 +651,12 @@
                     <!-- 大学フィルターセクション -->
                     <div id="university-filter-section" style="margin-bottom: 20px;">
                         <h4 style="margin-bottom: 15px;">🏫 大学名でフィルタリング</h4>
+                        <div class="form-group">
+                            <input type="text" id="university-search-input" class="form-control" 
+                                placeholder="大学名を検索..." oninput="displayUniversityList()">
+                        </div>
                         <div id="university-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; background: #f8f9fa;">
-                            <div class="loading" style="text-align: center; padding: 20px;">
-                                <div class="spinner"></div>
-                                大学リストを読み込み中...
-                            </div>
+                            
                         </div>
                         <div style="margin-top: 10px; text-align: right;">
                             <button class="btn btn-secondary" onclick="clearUniversityFilter()" style="font-size: 14px;">フィルターをクリア</button>
@@ -639,20 +680,9 @@
                         </div>
                         
                         <div class="checkbox-group">
-                            <input type="checkbox" id="llm-summary" checked>
-                            <label for="llm-summary">🤖 AIによる200文字要約を追加</label>
-                        </div>
-                        
-                        <div class="checkbox-group">
                             <input type="checkbox" id="young-researcher-filter">
                             <label for="young-researcher-filter">🌟 若手研究者のみ表示</label>
                         </div>
-                        
-                        <div class="form-group">
-                            <label>最大表示件数: <span id="max-results-display">5</span></label>
-                            <input type="range" id="max-results" min="1" max="20" value="5" class="form-control" oninput="document.getElementById('max-results-display').textContent = this.value">
-                        </div>
-                    </div>
 
                     <div class="form-group">
                         <input type="text" class="form-control" id="api-search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
@@ -1116,6 +1146,11 @@
     <script src="config.js"></script>
     <script src="api-client.js"></script>
     <script>
+        // スクリプトの先頭に追加
+        let fullSearchResults = [];
+        let currentPage = 1;
+        const resultsPerPage = 20;
+        
         // api-client.jsで定義されたapiClientを使用
         
         // 大学リストを保持
@@ -1386,147 +1421,228 @@
             
             resultsContainer.innerHTML = html;
         }
-        
-        // API検索結果の表示関数
-        window.displayAPISearchResults = function(apiResponse) {
-            const resultsContainer = document.getElementById('api-search-results');
-            
-            if (!apiResponse || apiResponse.status !== 'success') {
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-warning">
-                        API検索でエラーが発生しました: ${apiResponse?.detail || '不明なエラー'}
-                    </div>
-                `;
-                return;
-            }
-            
-            // 内部評価モードの場合
-            if (apiResponse.evaluation_mode === 'internal' && apiResponse.evaluated_results) {
-                displayInternalEvaluationResults(apiResponse);
-                return;
-            }
+/**
+ * 所属名の文字列を大学名に正規化（整形）する関数
+ * @param {string} name - 整形したい元の所属名
+ * @returns {string|null} - 整形後の大学名、またはnull
+ */
+function normalizeUniversityName(name) {
+    if (!name || typeof name !== 'string') {
+        return null;
+    }
+    let normalized = name;
 
-            if (!apiResponse.results || apiResponse.results.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-info">
-                        「${apiResponse.query}」に該当する研究者は見つかりませんでした。
-                    </div>
-                `;
-                return;
-            }
+    // 1. 特殊な大学統合ルールを先に適用
+    if (normalized.includes('東京工業大学') || normalized.includes('東京医科歯科大学')) {
+        return '東京科学大学';
+    }
+    if (normalized.includes('東海国立大学')) {
+        return '名古屋大学';
+    }
 
-            // 若手研究者数をカウント
-            let youngResearcherCount = 0;
-            apiResponse.results.forEach(researcher => {
-                if (researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1) {
-                    youngResearcherCount++;
-                }
-            });
-            
-            // 成功メッセージ
-            let html = `
-                <div class="alert alert-success">
-                    「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
-                    ${apiResponse.total}件見つかりました。
-                    ${youngResearcherCount > 0 ? `<span style="color: #ff6b6b; font-weight: bold;">🌟 若手研究者: ${youngResearcherCount}名</span>` : ''}
-                    <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
+    // 2. 接頭辞（法人名など）を削除
+    normalized = normalized.replace(/^(国立大学法人|学校法人|公立大学法人)\s*/, '');
+
+    // 3. 複数大学名が含まれる場合、最初のものを採用
+    normalized = normalized.split('／')[0];
+
+    // 4. 大学名以降の組織名や役職名を削除
+    normalized = normalized.replace(/\s*(大学院|大学病院|病院|研究院|研究センター|研究科|学部|附属|特任准教授|教授|准教授|客員|機構|センター).*$/, '');
+
+    // 5. 前後の空白を削除
+    normalized = normalized.trim();
+    
+    // 6. 最終チェック（「大学」で終わるか）
+    if (normalized.endsWith('大学')) {
+        return normalized;
+    }
+    
+    return null; // 有効な大学名でない場合はnullを返す
+}        
+// API検索結果の表示関数 (大学名正規化対応版)
+window.displayAPISearchResults = function(apiResponse) {
+    const resultsContainer = document.getElementById('api-search-results');
+    
+    if (fullSearchResults && fullSearchResults.length > 0) {
+        // ▼▼▼ この部分を修正 ▼▼▼
+        const uniqueUniversities = new Set(
+            fullSearchResults.map(r => {
+                // 生の所属名を正規化関数にかける
+                return normalizeUniversityName(r.main_affiliation_name_ja || r.main_affiliation_name_en);
+            }).filter(Boolean) // nullになったものを除外
+        );
+        // ▲▲▲ 修正ここまで ▲▲▲
+
+        window.selectedUniversities = Array.from(uniqueUniversities);
+        displayUniversityList(); 
+    }
+
+    // (以降のコードは変更なし)
+    const totalResults = fullSearchResults.length;
+    // ... (以下、関数の残りの部分は同じです) ...
+    // ...
+    // ...
+
+    const totalPages = Math.ceil(totalResults / resultsPerPage);
+    const startIndex = (currentPage - 1) * resultsPerPage;
+    const endIndex = startIndex + resultsPerPage;
+    const paginatedResults = fullSearchResults.slice(startIndex, endIndex);
+
+    let html = '';
+
+    if (window.selectedUniversities && window.selectedUniversities.length > 0) {
+        html += `
+            <div class="alert alert-info" style="margin-bottom: 20px; border-left: 4px solid #667eea;">
+                <h5 style="font-size: 16px; color: #2c3e50; margin-bottom: 10px;">🏫 絞り込み中の大学</h5>
+                <div>${window.selectedUniversities.map(univ => `<span class="filter-active-badge">${univ}</span>`).join('')}</div>
+            </div>
+        `;
+    }
+
+    if (totalResults === 0) {
+        html += `<div class="alert alert-info">「${apiResponse.query}」に該当する研究者は見つかりませんでした。</div>`;
+        resultsContainer.innerHTML = html;
+        return;
+    }
+    
+    html += `
+        <div class="alert alert-success">
+            「${apiResponse.query}」の検索結果: ${totalResults}件見つかりました。
+            ( ${currentPage} / ${totalPages} ページ目を表示中 )
+        </div>
+    `;
+
+    if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
+        const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
+        html += `
+            <div class="expanded-keywords">
+                <strong>🧠 AIによるキーワード拡張:</strong><br>
+                <div style="margin-top: 8px;">
+                    ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
                 </div>
-            `;
-            
-            // キーワード拡張情報の表示
-            if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
-                const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
-                html += `
-                    <div class="expanded-keywords">
-                        <strong>🧠 AIによるキーワード拡張:</strong><br>
-                        <div style="margin-top: 8px;">
-                            ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
+            </div>
+        `;
+    }
 
-            // 研究者カードの生成
-            apiResponse.results.forEach((researcher, index) => {
-                // 最初の研究者のデータ構造を確認
-                if (index === 0) {
-                    console.log('📦 最初の研究者データ:', researcher);
-                    console.log('🔑 データのキー:', Object.keys(researcher));
-                }
-                const name = researcher.name_ja || researcher.name_en || '名前不明';
-                const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
-                const keywords = researcher.research_keywords_ja || 'N/A';
-                const fields = researcher.research_fields_ja || 'N/A';
-                const profile = researcher.profile_ja || 'N/A';
-                const paper = researcher.paper_title_ja_first || 'N/A';
-                const project = researcher.project_title_ja_first || 'N/A';
-                const researchmapUrl = researcher.researchmap_url || '#';
-                // 若手研究者判定の取得（大文字小文字の両方に対応）
-                const isYoungResearcher = researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1;
-                const youngReasons = researcher.young_researcher_reasons || [];
+    paginatedResults.forEach(researcher => {
+        const name = researcher.name_ja || researcher.name_en || '名前不明';
+        const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+        const keywords = researcher.research_keywords_ja || 'N/A';
+        const fields = researcher.research_fields_ja || 'N/A';
+        const profile = researcher.profile_ja || 'N/A';
+        const paper = researcher.paper_title_ja_first || 'N/A';
+        const project = researcher.project_title_ja_first || 'N/A';
+        const researchmapUrl = researcher.researchmap_url || '#';
+        const isYoungResearcher = researcher.is_young_researcher;
+        const youngReasons = researcher.young_researcher_reasons || [];
+        
+        const researcherId = (researchmapUrl.split('/').pop() || (name + affiliation)).replace(/[^a-zA-Z0-9]/g, '');
+
+        html += `
+            <div class="researcher-card" id="card-${researcherId}">
+                <div class="researcher-name">
+                    ${name} (${affiliation})
+                    ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
+                </div>
                 
-                // デバッグ: 若手研究者判定の詳細
-                if (isYoungResearcher) {
-                    console.log(`✅ ${name}は若手研究者です: ${youngReasons.join('、')}`);
-                }
+                ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
+                ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
+                ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+                ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
                 
-                // デバッグ用: 全ての研究者の若手判定情報を表示
-                console.log(`🔍 ${apiResponse.method}検索 - ${name}の若手判定:`, {
-                    name,
-                    is_young_researcher: researcher.is_young_researcher,
-                    young_researcher_reasons: researcher.young_researcher_reasons,
-                    main_affiliation_job_ja: researcher.main_affiliation_job_ja,
-                    main_affiliation_job_title_ja: researcher.main_affiliation_job_title_ja,
-                    profile_ja_first_300: researcher.profile_ja ? researcher.profile_ja.substring(0, 300) : null
-                });
-
-                // スコア表示
-                let scoreText = '';
-                if (apiResponse.method === 'keyword' && researcher.relevance_score !== null) {
-                    scoreText = ` (関連度: ${researcher.relevance_score})`;
-                } else if (apiResponse.method === 'semantic' && researcher.distance !== null) {
-                    scoreText = ` (距離: ${researcher.distance.toFixed(4)})`;
-                }
-
-                html += `
-                    <div class="researcher-card">
-                        <div class="researcher-name">
-                            ${name} (${affiliation})${scoreText}
-                            ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
-                        </div>
-                        
-                        ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
-                        ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
-                        ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
-                        ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
-                        ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
-                        
-                        ${researcher.llm_summary ? `
-                            <div class="ai-summary">
-                                <strong>🤖 AI要約:</strong> 
-                                <div class="ai-analysis-content">${convertMarkdownToHtml(researcher.llm_summary)}</div>
-                            </div>
-                        ` : ''}
-                        
-                        ${isYoungResearcher && youngReasons.length > 0 ? `
-                            <div class="young-researcher-info">
-                                <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
-                            </div>
-                        ` : ''}
-                        
-                        <div class="button-group">
-                            <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
-                            <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
-                            ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
-                            <a href="researcher-analysis.html?name=${encodeURIComponent(name)}&url=${encodeURIComponent(researchmapUrl)}&query=${encodeURIComponent(apiResponse.query)}" class="btn btn-secondary">📊 分析結果管理</a>
-                        </div>
+                ${isYoungResearcher && youngReasons.length > 0 ? `
+                    <div class="young-researcher-info">
+                        <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
                     </div>
-                `;
-            });
+                ` : ''}
 
-            resultsContainer.innerHTML = html;
+                <div id="summary-container-${researcherId}" class="ai-summary" style="display: none; margin-top: 15px;"></div>
+                
+                <div class="button-group">
+                     <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}', '${apiResponse.query.replace(/'/g, "\\'")}')">🤖 AI要約を生成</button>
+                     <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
+                     <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
+                     ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    if (totalPages > 1) {
+        html += '<div class="pagination">';
+        html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; 前へ</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<button onclick="changePage(${i})" class="${currentPage === i ? 'active' : ''}">${i}</button>`;
+        }
+        html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>次へ &raquo;</button>`;
+        html += '</div>';
+    }
+
+    resultsContainer.innerHTML = html;
+};
+/**
+ * ページを切り替えるための関数
+ * @param {number} page - 表示したいページ番号
+ */
+window.changePage = function(page) {
+    currentPage = page;
+    // apiResponseは検索クエリさえあればOK
+    displayAPISearchResults({ query: document.getElementById('api-search-input').value.trim() }); 
+};
+
+/**
+ * 研究者1名分のAI要約を個別に生成する関数
+ * @param {string} researcherId - 研究者を一意に特定するID
+ * @param {string} researchmapUrl - 研究者のResearchMap URL
+ */
+async function generateSingleSummary(researcherId, researchmapUrl, query) { // query引数を追加
+    const container = document.getElementById(`summary-container-${researcherId}`);
+    const card = document.getElementById(`card-${researcherId}`);
+    const button = card.querySelector('button[onclick*="generateSingleSummary"]');
+
+    if (!container || !researchmapUrl || researchmapUrl === '#') {
+        alert('この研究者の要約は生成できません。');
+        return;
+    }
+
+    container.style.display = 'block';
+    container.innerHTML = `<strong>🤖 AI要約を生成中...</strong><div class="spinner" style="width: 15px; height: 15px; margin: 10px auto 0;"></div>`;
+    button.disabled = true;
+    button.textContent = '生成中...';
+
+    try {
+        const response = await fetch(`${apiClient.baseURL}/api/generate-summary`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // ▼▼▼ body に query を追加 ▼▼▼
+            body: JSON.stringify({ 
+                researchmap_url: researchmapUrl,
+                query: query 
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'サーバーからの応答が不正です。');
         }
 
+        const data = await response.json();
+
+        if (data.status === 'success' && data.summary) {
+            container.innerHTML = `<strong>🤖 AI要約:</strong><div class="ai-analysis-content" style="margin-top: 5px;">${convertMarkdownToHtml(data.summary)}</div>`;
+            button.style.display = 'none';
+        } else {
+            throw new Error(data.error || '要約の生成に失敗しました。');
+        }
+
+    } catch (error) {
+        container.innerHTML = `<strong style="color: red;">❌ エラー:</strong> ${error.message}`;
+        button.disabled = false;
+        button.textContent = '再度試す';
+    }
+}
+        
         // 検索状態保存・復元機能
         function saveSearchState(searchParams, apiResponse) {
             const searchState = {
@@ -1637,11 +1753,14 @@
             const params = state.params;
             document.getElementById('api-search-input').value = params.query || '';
             document.getElementById('search-method').value = params.method || 'semantic';
-            document.getElementById('max-results').value = params.maxResults || 5;
-            document.getElementById('max-results-display').textContent = params.maxResults || 5;
+            const maxResultsEl_state = document.getElementById('max-results');
+            if (maxResultsEl_state) maxResultsEl_state.value = params.maxResults || 5;
+            const maxResultsDisplayEl_state = document.getElementById('max-results-display');
+            if (maxResultsDisplayEl_state) maxResultsDisplayEl_state.textContent = params.maxResults || 5;
             
             document.getElementById('llm-expansion').checked = params.useLLMExpansion || false;
-            document.getElementById('llm-summary').checked = params.useLLMSummary !== undefined ? params.useLLMSummary : true;
+            const llmSummaryEl_state = document.getElementById('llm-summary');
+            if (llmSummaryEl_state) llmSummaryEl_state.checked = params.useLLMSummary !== undefined ? params.useLLMSummary : true;
             document.getElementById('young-researcher-filter').checked = params.youngResearcherFilter || false;
             
             if (params.universityFilter && params.universityFilter.length > 0) {
@@ -1718,77 +1837,72 @@
             console.log('🗑️ 検索フォームと結果をクリアしました');
         }
 
-        // 実際のAPI検索関数
-        window.performAPISearch = async function() {
-            const searchInput = document.getElementById('api-search-input');
-            const searchQuery = searchInput.value.trim();
-            
-            if (!searchQuery) {
-                alert('検索キーワードを入力してください。');
-                return;
-            }
+// 実際のAPI検索関数（修正版）
+window.performAPISearch = async function() {
+    const searchInput = document.getElementById('api-search-input');
+    const searchQuery = searchInput.value.trim();
+    
+    if (!searchQuery) {
+        alert('検索キーワードを入力してください。');
+        return;
+    }
 
-            // 検索オプションの取得
-            const searchMethod = document.getElementById('search-method').value;
-            const maxResults = parseInt(document.getElementById('max-results').value);
-            const useLLMExpansion = document.getElementById('llm-expansion').checked;
-            const useLLMSummary = document.getElementById('llm-summary').checked;  // AI要約の有効/無効
-            const useInternalEvaluation = false;  // 内部評価モードは使用しない
-            const youngResearcherFilter = document.getElementById('young-researcher-filter').checked;  // 若手研究者フィルタ
+    // --- ▼▼▼ ここから修正 ▼▼▼ ---
+    // 検索オプションの取得
+    const searchMethod = document.getElementById('search-method').value;
+    const useLLMExpansion = document.getElementById('llm-expansion').checked;
+    // const useLLMSummary = document.getElementById('llm-summary').checked; // ← エラーの原因となっていた行を削除
+    const youngResearcherFilter = document.getElementById('young-researcher-filter').checked;
+    // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
-            // 結果エリアをクリア
-            const resultsContainer = document.getElementById('api-search-results');
-            
-            // ローディング表示
-            resultsContainer.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    API検索を実行中...
-                </div>
-            `;
+    const resultsContainer = document.getElementById('api-search-results');
+    
+    // ローディング表示
+    resultsContainer.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            API検索を実行中 (最大100件)...
+        </div>
+    `;
 
-            try {
-                // API検索実行
-                const searchParams = {
-                    query: searchQuery,
-                    method: searchMethod,
-                    maxResults: maxResults,
-                    useLLMExpansion: useLLMExpansion,
-                    useLLMSummary: useLLMSummary,
-                    useInternalEvaluation: useInternalEvaluation,
-                    youngResearcherFilter: youngResearcherFilter,
-                    universityFilter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
-                };
+    try {
+        // --- ▼▼▼ ここから修正 ▼▼▼ ---
+        // API検索実行 (maxResultsを100に固定)
+        const searchParams = {
+            query: searchQuery,
+            method: searchMethod,
+            maxResults: 100,
+            useLLMExpansion: useLLMExpansion,
+            // useLLMSummary: useLLMSummary, // ← パラメータからも削除
+            useInternalEvaluation: false,
+            youngResearcherFilter: youngResearcherFilter,
+            universityFilter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
+        };
+        // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
-                const apiResponse = await apiClient.searchResearchers(searchParams);
-                
-                // デバッグ: APIレスポンスの詳細を確認
-                console.log('📦 APIレスポンス全体:', apiResponse);
-                if (apiResponse.results && apiResponse.results.length > 0) {
-                    console.log('🔍 最初の結果の詳細:', apiResponse.results[0]);
-                    console.log('🔑 最初の結果のキー:', Object.keys(apiResponse.results[0]));
-                    console.log('🌟 is_young_researcher:', apiResponse.results[0].is_young_researcher);
-                    console.log('📝 young_researcher_reasons:', apiResponse.results[0].young_researcher_reasons);
-                }
-                
-                // 結果表示
-                displayAPISearchResults(apiResponse);
-                
-                // 検索状態を保存
-                saveSearchState(searchParams, apiResponse);
+        const apiResponse = await apiClient.searchResearchers(searchParams);
+        
+        fullSearchResults = apiResponse.results || [];
+        currentPage = 1;
 
-            } catch (error) {
-                console.error('API検索エラー:', error);
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-warning">
-                        <h4>🔴 API検索でエラーが発生しました</h4>
-                        <p><strong>エラー内容:</strong> ${error.message}</p>
-                        <hr>
-                        <p>バックエンドサーバーが起動しているか確認してください。</p>
-                    </div>
-                `;
-            }
-        }
+        // 結果表示関数を呼び出す
+        displayAPISearchResults(apiResponse); 
+        
+        // 検索状態を保存
+        saveSearchState(searchParams, apiResponse);
+
+    } catch (error) {
+        console.error('API検索エラー:', error);
+        resultsContainer.innerHTML = `
+            <div class="alert alert-warning">
+                <h4>🔴 API検索でエラーが発生しました</h4>
+                <p><strong>エラー内容:</strong> ${error.message}</p>
+                <hr>
+                <p>バックエンドサーバーが起動しているか確認してください。</p>
+            </div>
+        `;
+    }
+}
 
         // 大学リストを取得
         window.loadUniversityList = async function() {
@@ -1860,47 +1974,58 @@
                 `;
             }
         }
-        
-        // 大学リストを表示
-        window.displayUniversityList = function() {
-            const container = document.getElementById('university-list-container');
-            
-            if (window.universityList.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #6c757d;">大学データがありません</p>';
-                return;
-            }
-            
-            // 上位20大学を表示
-            const topUniversities = window.universityList.slice(0, 20);
-            
-            let html = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">';
-            
-            topUniversities.forEach(univ => {
-                const isChecked = window.selectedUniversities.includes(univ.name);
-                html += `
-                    <div class="checkbox-group" style="margin-bottom: 5px;">
-                        <input type="checkbox" id="univ-${univ.name.replace(/[^\w\s]/gi, '')}" 
-                               value="${univ.name}" 
-                               ${isChecked ? 'checked' : ''}
-                               onchange="toggleUniversityFilter('${univ.name.replace(/'/g, "\\'")}')"
-                               style="margin-right: 8px;">
-                        <label for="univ-${univ.name.replace(/[^\w\s]/gi, '')}" style="margin-bottom: 0; cursor: pointer;">
-                            ${univ.name} <span style="color: #6c757d; font-size: 12px;">(${univ.count.toLocaleString()}名)</span>
-                        </label>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-            
-            if (window.universityList.length > 20) {
-                html += `<p style="text-align: center; color: #6c757d; margin-top: 10px; font-size: 14px;">
-                    他${window.universityList.length - 20}大学があります
-                </p>`;
-            }
-            
-            container.innerHTML = html;
+        // 大学リストを表示 (検索機能・表示件数制限付き)
+window.displayUniversityList = function() {
+    const container = document.getElementById('university-list-container');
+    const searchInput = document.getElementById('university-search-input');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+    if (!window.universityList || window.universityList.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d;">大学データがありません</p>';
+        return;
+    }
+
+    // 1. 検索ワードで大学リストを絞り込む
+    const filteredUniversities = searchTerm
+        ? window.universityList.filter(univ => univ.name.toLowerCase().includes(searchTerm))
+        : window.universityList;
+
+    // 2. 表示件数を上位100件に制限して、パフォーマンスを確保
+    const universitiesToShow = filteredUniversities.slice(0, 100);
+
+    let html = '';
+    if (universitiesToShow.length === 0) {
+        html = '<p style="text-align: center; color: #6c757d;">該当する大学はありません</p>';
+    } else {
+        html += '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">';
+        universitiesToShow.forEach(univ => {
+            const isChecked = window.selectedUniversities.includes(univ.name);
+            const univId = `univ-${univ.name.replace(/[^\w\s]/gi, '')}`; // IDをサニタイズ
+            html += `
+                <div class="checkbox-group" style="margin-bottom: 5px;">
+                    <input type="checkbox" id="${univId}" 
+                           value="${univ.name}" 
+                           ${isChecked ? 'checked' : ''}
+                           onchange="toggleUniversityFilter('${univ.name.replace(/'/g, "\\'")}')"
+                           style="margin-right: 8px;">
+                    <label for="${univId}" style="margin-bottom: 0; cursor: pointer;">
+                        ${univ.name} <span style="color: #6c757d; font-size: 12px;">(${univ.count.toLocaleString()}名)</span>
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        // 検索結果が100件より多い場合にメッセージを表示
+        if (filteredUniversities.length > 100) {
+            html += `<p style="text-align: center; color: #6c757d; margin-top: 10px; font-size: 14px;">
+                さらにキーワードを絞り込んでください (全${filteredUniversities.length}件中、上位100件を表示中)
+            </p>`;
         }
+    }
+    
+    container.innerHTML = html;
+};
         
         // 大学フィルターの切り替え
         window.toggleUniversityFilter = function(universityName) {
@@ -2481,6 +2606,10 @@
             if (targetPage) {
                 targetPage.classList.remove('hidden');
                 console.log('✅ ページ表示:', page);
+                
+                // ページ表示後の状態を確認
+                const isNowVisible = !targetPage.classList.contains('hidden');
+                console.log('📋 ページ表示後の状態:', page, isNowVisible);
             } else {
                 console.error('❌ ページが見つかりません:', page + '-page');
             }
@@ -2491,6 +2620,9 @@
             if (event && event.target) {
                 event.target.classList.add('active');
             }
+            
+            // ページ切り替えのデバッグ情報
+            console.log('📋 ページ切り替え完了:', page);
             
             // 特定ページでの追加処理
             if (page === 'researchers') {
@@ -2507,9 +2639,24 @@
             } else if (page === 'projects') {
                 // プロジェクトページの場合は仮プロジェクト一覧を更新
                 console.log('📋 プロジェクトページ表示時に一覧を更新');
+                
+                // DOMが更新されるのを待ってから実行
                 setTimeout(() => {
-                    loadTempProjects();
-                }, 100); // 少し遅延させてDOMが更新されるのを待つ
+                    const projectsPage = document.getElementById('projects-page');
+                    const isVisible = projectsPage && !projectsPage.classList.contains('hidden');
+                    console.log('📋 setTimeout内でのプロジェクトページ状態:', isVisible);
+                    
+                    if (isVisible) {
+                        loadTempProjects();
+                    } else {
+                        console.error('❌ プロジェクトページがまだ非表示状態です');
+                        // 再度試行
+                        setTimeout(() => {
+                            console.log('🔄 再度loadTempProjectsを実行');
+                            loadTempProjects();
+                        }, 200);
+                    }
+                }, 100);
             }
         }
 
@@ -2532,23 +2679,23 @@
         }
 
         // ボタンクリックイベントの追加
-        document.addEventListener('click', function(e) {
-            if (e.target.textContent.includes('プロジェクト詳細・進捗管理へ')) {
-                alert('プロジェクト詳細・進捗管理ページへ遷移します（モック機能）');
-            }
-            if (e.target.textContent.includes('新しいプロジェクトを開始する')) {
-                alert('新規プロジェクト作成フォームが表示されます（モック機能）');
-            }
-            if (e.target.textContent.includes('相談内容を送信する')) {
-                alert('ご相談ありがとうございます。担当者より3営業日以内に折り返しご連絡いたします。');
-            }
-            if (e.target.textContent.includes('申請サポートを申し込む')) {
-                alert('申請サポートに関するお問い合わせフォームが表示されます（モック機能）');
-            }
-            if (e.target.textContent.includes('更新する') || e.target.textContent.includes('保存する') || e.target.textContent.includes('変更する')) {
-                alert('設定を保存しました（モック機能）');
-            }
-        });
+        //document.addEventListener('click', function(e) {
+        //    if (e.target.textContent.includes('プロジェクト詳細・進捗管理へ')) {
+        //        alert('プロジェクト詳細・進捗管理ページへ遷移します（モック機能）');
+        //    }
+        //    if (e.target.textContent.includes('新しいプロジェクトを開始する')) {
+        //        alert('新規プロジェクト作成フォームが表示されます（モック機能）');
+        //    }
+        //    if (e.target.textContent.includes('相談内容を送信する')) {
+        //        alert('ご相談ありがとうございます。担当者より3営業日以内に折り返しご連絡いたします。');
+        //    }
+        //    if (e.target.textContent.includes('申請サポートを申し込む')) {
+        //        alert('申請サポートに関するお問い合わせフォームが表示されます（モック機能）');
+        //    }
+        //    if (e.target.textContent.includes('更新する') || e.target.textContent.includes('保存する') || e.target.textContent.includes('変更する')) {
+        //        alert('設定を保存しました（モック機能）');
+        //    }
+        //});
         
 
 
@@ -2604,11 +2751,10 @@
             // 保存済み分析の数を表示
             updateSavedAnalysisCount();
             
-            // プロジェクトページ表示時に仮プロジェクトを読み込み
-            if (document.getElementById('temp-projects-list')) {
-                console.log('📋 仮プロジェクト一覧の読み込みを開始');
-                loadTempProjects();
-            }
+            // 注意: DOMContentLoadedでは仮プロジェクトを読み込まない
+            // プロジェクトページが表示されていない状態でloadTempProjectsを呼ぶと
+            // 非表示の要素に対して処理が行われ、ページ切り替え時に表示されない
+            console.log('📋 DOMContentLoaded完了 - 仮プロジェクト読み込みはページ表示時に実行');
         });
         
         // 仮プロジェクト一覧を読み込み
@@ -2623,6 +2769,11 @@
                 console.error('❌ temp-projects-listエレメントが見つかりません');
                 return;
             }
+            
+            // コンテナの可視状態をチェック
+            const projectsPage = document.getElementById('projects-page');
+            const isVisible = projectsPage && !projectsPage.classList.contains('hidden');
+            console.log('📋 プロジェクトページの表示状態:', isVisible);
             
             if (tempProjects.length === 0) {
                 console.log('📋 プロジェクトが0件のため、空のメッセージを表示');
@@ -2664,6 +2815,11 @@
             console.log('📋 生成されたHTMLの長さ:', html.length);
             listContainer.innerHTML = html;
             console.log('✅ 仮プロジェクト一覧の表示完了');
+            
+            // デバッグ情報を追加表示
+            if (!isVisible) {
+                console.warn('⚠️ プロジェクトページが非表示状態でloadTempProjectsが実行されました');
+            }
         }
         
         // 保存済み分析の数を更新

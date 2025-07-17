@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>テスト用ボタン</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .output {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 マイプロジェクト機能テスト</h1>
+    
+    <div class="test-buttons">
+        <button class="btn btn-primary" onclick="createTestProject()">
+            ✅ テストプロジェクト作成
+        </button>
+        <button class="btn btn-secondary" onclick="debugLocalStorage()">
+            🔍 ローカルストレージ確認
+        </button>
+        <button class="btn btn-secondary" onclick="openMainPage()">
+            🏠 メインページ表示
+        </button>
+        <button class="btn btn-danger" onclick="clearAllProjects()">
+            🗑️ 全プロジェクト削除
+        </button>
+    </div>
+
+    <div id="output" class="output">
+        準備完了 - 上のボタンをクリックしてテストを開始してください。
+    </div>
+
+    <script>
+        // テストプロジェクトを作成
+        function createTestProject() {
+            const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+            const testProject = {
+                id: 'test-' + Date.now(),
+                name: 'テストプロジェクト ' + (tempProjects.length + 1),
+                description: 'これはテスト用の仮プロジェクトです。マイプロジェクト機能が正常に動作することを確認するために作成されました。',
+                status: 'created',
+                created_at: new Date().toISOString(),
+                selected_researchers: [
+                    { name: 'テスト研究者A', university: 'テスト大学', researchmap_url: 'https://researchmap.jp/test-a' },
+                    { name: 'テスト研究者B', university: 'サンプル大学', researchmap_url: 'https://researchmap.jp/test-b' }
+                ]
+            };
+            
+            tempProjects.push(testProject);
+            localStorage.setItem('tempProjects', JSON.stringify(tempProjects));
+            
+            updateOutput(`
+                ✅ テストプロジェクトを作成しました！
+                
+                プロジェクト名: ${testProject.name}
+                プロジェクトID: ${testProject.id}
+                研究者数: ${testProject.selected_researchers.length}名
+                
+                メインページのプロジェクトタブで確認してください。
+            `);
+        }
+
+        // ローカルストレージの状態を確認
+        function debugLocalStorage() {
+            const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+            
+            let output = `
+                📋 現在のローカルストレージの状態:
+                
+                - 仮プロジェクト数: ${tempProjects.length}件
+                
+            `;
+            
+            if (tempProjects.length > 0) {
+                output += '📂 プロジェクト一覧:\n';
+                tempProjects.forEach((project, index) => {
+                    output += `  ${index + 1}. ${project.name} (${project.status})\n`;
+                    output += `     ID: ${project.id}\n`;
+                    output += `     研究者: ${project.selected_researchers.length}名\n`;
+                    output += `     作成日: ${new Date(project.created_at).toLocaleString('ja-JP')}\n\n`;
+                });
+            } else {
+                output += '📂 プロジェクトはありません。\n';
+            }
+            
+            // 他のストレージ情報も表示
+            const savedAnalyses = JSON.parse(localStorage.getItem('savedAnalyses') || '[]');
+            output += `\n📊 その他のデータ:\n`;
+            output += `- 保存済み分析: ${savedAnalyses.length}件\n`;
+            
+            updateOutput(output);
+        }
+
+        // メインページを開く
+        function openMainPage() {
+            window.location.href = 'index.html';
+        }
+
+        // 全プロジェクトを削除
+        function clearAllProjects() {
+            if (confirm('全ての仮プロジェクトを削除しますか？この操作は取り消せません。')) {
+                localStorage.removeItem('tempProjects');
+                updateOutput('🗑️ 全ての仮プロジェクトを削除しました。');
+            }
+        }
+
+        // 出力エリアを更新
+        function updateOutput(message) {
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div style="white-space: pre-line; font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                    ${message}
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                    ${new Date().toLocaleString('ja-JP')} に実行
+                </div>
+            `;
+        }
+
+        // 初期化時にストレージ状態を表示
+        window.onload = function() {
+            debugLocalStorage();
+        };
+    </script>
+</body>
+</html>
