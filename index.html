@@ -1399,7 +1399,7 @@
             resultsContainer.innerHTML = html;
         }
         
-// API検索結果の表示関数
+// API検索結果の表示関数 (自動フィルタ・絞り込み状況表示 統合版)
 window.displayAPISearchResults = function(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');
     
@@ -1413,11 +1413,24 @@ window.displayAPISearchResults = function(apiResponse) {
         return;
     }
 
-    // ▼▼▼【復活させる機能】ここから ▼▼▼
-    // 表示するHTML全体を格納する変数
+    // ▼▼▼【自動フィルタ機能】ここから ▼▼▼
+    // 検索結果にヒットした大学を抽出し、フィルタの選択状態を更新
+    if (apiResponse.results && apiResponse.results.length > 0) {
+        const uniqueUniversities = new Set(
+            apiResponse.results.map(r => r.main_affiliation_name_ja || r.main_affiliation_name_en).filter(Boolean)
+        );
+        window.selectedUniversities = Array.from(uniqueUniversities);
+        
+        // 更新された選択状態で、大学フィルタのチェックボックス表示を再描画
+        displayUniversityList(); 
+    }
+    // ▲▲▲【自動フィルタ機能】ここまで ▲▲▲
+
+
+    // ▼▼▼【絞り込み状況の表示機能】ここから ▼▼▼
     let html = ''; 
 
-    // 選択中の大学フィルタがある場合、その情報を表示するエリアを生成
+    // 選択中の大学フィルタがある場合、その情報を表示
     if (window.selectedUniversities && window.selectedUniversities.length > 0) {
         html += `
             <div class="alert alert-info" style="margin-bottom: 20px; border-left: 4px solid #667eea;">
@@ -1432,18 +1445,17 @@ window.displayAPISearchResults = function(apiResponse) {
             </div>
         `;
     }
-    // ▲▲▲【復活させる機能】ここまで ▲▲▲
+    // ▲▲▲【絞り込み状況の表示機能】ここまで ▲▲▲
 
+    
     // 内部評価モードの場合の処理
     if (apiResponse.evaluation_mode === 'internal' && apiResponse.evaluated_results) {
-        // この関数は変更なし
         displayInternalEvaluationResults(apiResponse);
         return;
     }
     
     // 検索結果が0件の場合の表示
     if (!apiResponse.results || apiResponse.results.length === 0) {
-        // html変数を加算して、絞り込み状況と「結果なし」メッセージを両方表示
         resultsContainer.innerHTML = html + `
             <div class="alert alert-info">
                 「${apiResponse.query}」に該当する研究者は見つかりませんでした。
@@ -1452,7 +1464,7 @@ window.displayAPISearchResults = function(apiResponse) {
         return;
     }
 
-    // 若手研究者数をカウント
+    // 若手研究者数をカウント (変更なし)
     let youngResearcherCount = 0;
     apiResponse.results.forEach(researcher => {
         if (researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1) {
@@ -1460,7 +1472,7 @@ window.displayAPISearchResults = function(apiResponse) {
         }
     });
     
-    // 検索成功メッセージを追加
+    // 検索成功メッセージを追加 (変更なし)
     html += `
         <div class="alert alert-success">
             「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
@@ -1470,7 +1482,7 @@ window.displayAPISearchResults = function(apiResponse) {
         </div>
     `;
     
-    // キーワード拡張情報の表示
+    // キーワード拡張情報の表示 (変更なし)
     if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
         const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
         html += `
@@ -1483,7 +1495,7 @@ window.displayAPISearchResults = function(apiResponse) {
         `;
     }
 
-    // 研究者カードの生成 (以降のコードは変更なし)
+    // 研究者カードの生成 (変更なし)
     apiResponse.results.forEach((researcher, index) => {
         const name = researcher.name_ja || researcher.name_en || '名前不明';
         const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
