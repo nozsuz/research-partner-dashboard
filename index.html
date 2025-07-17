@@ -2591,49 +2591,42 @@ window.displayUniversityList = function() {
             openProjectSelectModal(researcher);
         }
 
-        window.showPage = function(page) {
-            console.log('🔄 ページ切り替え:', page);
-            
-            // すべてのページを非表示
-            const pages = document.querySelectorAll('.page');
-            pages.forEach(p => p.classList.add('hidden'));
-            
-            // 選択されたページを表示
-            const targetPage = document.getElementById(page + '-page');
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-                console.log('✅ ページ表示:', page);
-            } else {
-                console.error('❌ ページが見つかりません:', page + '-page');
-            }
-            
-            // メニューアイテムのactive状態を更新
-            const menuItems = document.querySelectorAll('.menu-item');
-            menuItems.forEach(item => item.classList.remove('active'));
-            if (event && event.target) {
-                event.target.classList.add('active');
-            }
-            
-            // 特定ページでの追加処理
-            if (page === 'researchers') {
-                // 研究者検索ページの場合はAPIヘルスチェックを実行
-                checkAPIHealth();
-                
-                // 検索結果の復元を試行
-                setTimeout(() => {
-                    const restored = restoreSearchState();
-                    if (restored) {
-                        console.log('✅ 研究者検索ページで検索状態を復元しました');
-                    }
-                }, 500);
-            } else if (page === 'projects') {
-                // プロジェクトページの場合は仮プロジェクト一覧を更新
-                console.log('📋 プロジェクトページ表示時に一覧を更新');
-                setTimeout(() => {
-                    loadTempProjects();
-                }, 100); // 少し遅延させてDOMが更新されるのを待つ
-            }
+window.showPage = function(page) {
+    console.log('🔄 ページ切り替え:', page);
+    
+    // すべてのページを非表示
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(p => p.classList.add('hidden'));
+    
+    // 選択されたページを表示
+    const targetPage = document.getElementById(page + '-page');
+    if (targetPage) {
+        targetPage.classList.remove('hidden');
+        console.log('✅ ページ表示:', page);
+    } else {
+        console.error('❌ ページが見つかりません:', page + '-page');
+    }
+    
+    // メニューアイテムのactive状態を更新
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => {
+        // メニュー項目内のテキストを元に判定
+        if (item.textContent.trim().includes(event.target.textContent.trim())) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
         }
+    });
+    
+    // 特定ページでの追加処理
+    if (page === 'projects') {
+        // プロジェクトページの場合は仮プロジェクト一覧を更新
+        console.log('📋 プロジェクトページ表示時に一覧を更新');
+        setTimeout(() => {
+            loadTempProjects();
+        }, 100);
+    }
+}
 
         window.showTab = function(section, tab) {
             // すべてのタブコンテンツを非表示
@@ -2733,60 +2726,55 @@ window.displayUniversityList = function() {
             }
         });
         
-        // 仮プロジェクト一覧を読み込み
-        function loadTempProjects() {
-            console.log('📋 loadTempProjects関数実行開始');
-            
-            const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
-            console.log('💾 ローカルストレージから取得したプロジェクト数:', tempProjects.length);
-            
-            const listContainer = document.getElementById('temp-projects-list');
-            if (!listContainer) {
-                console.error('❌ temp-projects-listエレメントが見つかりません');
-                return;
-            }
-            
-            if (tempProjects.length === 0) {
-                console.log('📋 プロジェクトが0件のため、空のメッセージを表示');
-                listContainer.innerHTML = '<p style="color: #7f8c8d;">仮プロジェクトはありません。</p>';
-                return;
-            }
-            
-            let html = '';
-            tempProjects.forEach((project, index) => {
-                console.log(`📋 プロジェクト${index + 1}: ${project.name}`);
-                
-                const statusText = project.status === 'matching_requested' ? '依頼送信済み' : '作成中';
-                const statusClass = project.status === 'matching_requested' ? 'status-completed' : 'status-planned';
-                
-                html += `
-                    <div class="project-card">
-                        <h4>${project.name}</h4>
-                        <div style="display: flex; gap: 20px; margin: 15px 0;">
-                            <div>
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                            </div>
-                            <div>作成日: ${new Date(project.created_at).toLocaleDateString('ja-JP')}</div>
-                            <div>研究者候補: ${(project.selected_researchers || []).length}名</div>
-                        </div>
-                        <p>${project.description.substring(0, 100)}${project.description.length > 100 ? '...' : ''}</p>
-                        <div style="display: flex; gap: 10px; margin-top: 15px;">
-                            <a href="temp-project.html?id=${project.id}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none;">
-                                管理画面へ
-                            </a>
-                            <button class="btn btn-danger" onclick="deleteTempProject('${project.id}', '${project.name.replace(/'/g, "\\'")}')" 
-                                    style="min-width: 120px;">
-                                🗑️ 削除
-                            </button>
-                        </div>
+function loadTempProjects() {
+    console.log('📋 loadTempProjects関数実行開始');
+    
+    const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+    console.log('💾 ローカルストレージから取得したプロジェクト数:', tempProjects.length);
+    
+    const listContainer = document.getElementById('temp-projects-list');
+    if (!listContainer) {
+        console.error('❌ temp-projects-listエレメントが見つかりません');
+        return;
+    }
+    
+    if (tempProjects.length === 0) {
+        listContainer.innerHTML = '<p style="color: #7f8c8d;">仮プロジェクトはありません。</p>';
+        return;
+    }
+    
+    let html = '';
+    tempProjects.forEach((project, index) => {
+        const statusText = project.status === 'matching_requested' ? '依頼送信済み' : '作成中';
+        const statusClass = project.status === 'matching_requested' ? 'status-completed' : 'status-planned';
+        
+        html += `
+            <div class="project-card">
+                <h4>${project.name}</h4>
+                <div style="display: flex; gap: 20px; margin: 15px 0;">
+                    <div>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
                     </div>
-                `;
-            });
-            
-            console.log('📋 生成されたHTMLの長さ:', html.length);
-            listContainer.innerHTML = html;
-            console.log('✅ 仮プロジェクト一覧の表示完了');
-        }
+                    <div>作成日: ${new Date(project.created_at).toLocaleDateString('ja-JP')}</div>
+                    <div>研究者候補: ${(project.selected_researchers || []).length}名</div>
+                </div>
+                <p>${project.description.substring(0, 100)}${project.description.length > 100 ? '...' : ''}</p>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <a href="temp-project.html?id=${project.id}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none;">
+                        管理画面へ
+                    </a>
+                    <button class="btn btn-danger" onclick="deleteTempProject('${project.id}', '${project.name.replace(/'/g, "\\'")}')" 
+                            style="min-width: 120px; background-color: #dc3545; color: white;">
+                        🗑️ 削除
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    listContainer.innerHTML = html;
+    console.log('✅ 仮プロジェクト一覧の表示完了');
+}
         
         // 保存済み分析の数を更新
         function updateSavedAnalysisCount() {
