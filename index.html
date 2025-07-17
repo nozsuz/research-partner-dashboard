@@ -2593,64 +2593,47 @@ window.displayUniversityList = function() {
 
 window.showPage = function(page) {
     console.log('🔄 ページ切り替え:', page);
-    
+
     // すべてのページを非表示
     const pages = document.querySelectorAll('.page');
     pages.forEach(p => p.classList.add('hidden'));
-    
+
     // 選択されたページを表示
     const targetPage = document.getElementById(page + '-page');
     if (targetPage) {
         targetPage.classList.remove('hidden');
         console.log('✅ ページ表示:', page);
-
-        // ▼▼▼ ここから追加 ▼▼▼
-        // 表示したページ内のタブを初期状態に戻す
-        const tabs = targetPage.querySelectorAll('.tab');
-        const tabContents = targetPage.querySelectorAll('.tab-content');
-
-        if (tabs.length > 0 && tabContents.length > 0) {
-            // 全てのタブとコンテンツから 'active' を削除
-            tabs.forEach(t => t.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-
-            // 最初のタブとコンテンツに 'active' を設定
-            tabs[0].classList.add('active');
-            tabContents[0].classList.add('active');
-        }
-        // ▲▲▲ 追加ここまで ▲▲▲
-
     } else {
         console.error('❌ ページが見つかりません:', page + '-page');
     }
-            
-            // メニューアイテムのactive状態を更新
-            const menuItems = document.querySelectorAll('.menu-item');
-            menuItems.forEach(item => item.classList.remove('active'));
-            if (event && event.target) {
-                event.target.classList.add('active');
+
+    // メニューアイテムのactive状態を更新
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => item.classList.remove('active'));
+    // eventを明示的に渡すようにonclick属性も変更すると、より堅牢になります。
+    // 例: onclick="showPage('projects', event)"
+    if (event && event.target) {
+        event.target.closest('.menu-item').classList.add('active');
+    }
+
+    // 特定ページでの追加処理
+    if (page === 'researchers') {
+        checkAPIHealth();
+        setTimeout(() => {
+            const restored = restoreSearchState();
+            if (restored) {
+                console.log('✅ 研究者検索ページで検索状態を復元しました');
             }
-            
-            // 特定ページでの追加処理
-            if (page === 'researchers') {
-                // 研究者検索ページの場合はAPIヘルスチェックを実行
-                checkAPIHealth();
-                
-                // 検索結果の復元を試行
-                setTimeout(() => {
-                    const restored = restoreSearchState();
-                    if (restored) {
-                        console.log('✅ 研究者検索ページで検索状態を復元しました');
-                    }
-                }, 500);
-            } else if (page === 'projects') {
-                // プロジェクトページの場合は仮プロジェクト一覧を更新
-                console.log('📋 プロジェクトページ表示時に一覧を更新');
-                setTimeout(() => {
-                    loadTempProjects();
-                }, 100); // 少し遅延させてDOMが更新されるのを待つ
+        }, 500);
+    } else if (page === 'projects') {
+        console.log('📋 プロジェクトページ表示時に一覧を更新');
+        setTimeout(() => {
+            if (typeof loadTempProjects === 'function') {
+                loadTempProjects();
             }
-        }
+        }, 100);
+    }
+}
 
         window.showTab = function(section, tab) {
             // すべてのタブコンテンツを非表示
