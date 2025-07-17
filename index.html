@@ -545,6 +545,17 @@
             font-style: italic;
             color: #495057;
         }
+        .filter-active-badge {
+            display: inline-block;
+            background-color: #e3f2fd;
+            color: #0c5460;
+            padding: 5px 12px;
+            border-radius: 15px;
+            margin: 5px 5px 5px 0;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: 1px solid #bee5eb;
+        }
     </style>
 </head>
 <body>
@@ -1387,162 +1398,147 @@
             resultsContainer.innerHTML = html;
         }
         
-        // API検索結果の表示関数
-        window.displayAPISearchResults = function(apiResponse) {
-            const resultsContainer = document.getElementById('api-search-results');
-            
-            if (!apiResponse || apiResponse.status !== 'success') {
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-warning">
-                        API検索でエラーが発生しました: ${apiResponse?.detail || '不明なエラー'}
-                    </div>
-                `;
-                return;
-            }
-            
-            // 検索結果から大学リストを抽出し、フィルターを自動適用する
-            if (apiResponse.results && apiResponse.results.length > 0) {
-                // 1. Setを使って重複しない大学名のリストを作成
-                const uniqueUniversities = new Set();
-                apiResponse.results.forEach(researcher => {
-                    const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en;
-                    if (affiliation) {
-                        uniqueUniversities.add(affiliation);
-                    }
-                });
-                // 2. Setを配列に変換し、選択状態の変数にセット
-                window.selectedUniversities = Array.from(uniqueUniversities);
-                // 3. 大学フィルターの表示を更新
-                displayUniversityList(); 
-                console.log('✅ 検索結果にヒットした大学でフィルターを自動適用しました:', window.selectedUniversities);
-            }
-            
-            // 内部評価モードの場合
-            if (apiResponse.evaluation_mode === 'internal' && apiResponse.evaluated_results) {
-                displayInternalEvaluationResults(apiResponse);
-                return;
-            }
+// API検索結果の表示関数
+window.displayAPISearchResults = function(apiResponse) {
+    const resultsContainer = document.getElementById('api-search-results');
+    
+    // APIレスポンスが不正な場合のエラーハンドリング
+    if (!apiResponse || apiResponse.status !== 'success') {
+        resultsContainer.innerHTML = `
+            <div class="alert alert-warning">
+                API検索でエラーが発生しました: ${apiResponse?.detail || '不明なエラー'}
+            </div>
+        `;
+        return;
+    }
 
-            if (!apiResponse.results || apiResponse.results.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-info">
-                        「${apiResponse.query}」に該当する研究者は見つかりませんでした。
-                    </div>
-                `;
-                return;
-            }
+    // ★★★ ここからが修正・追加箇所 ★★★
+    let html = ''; // 表示するHTML全体を格納する変数
 
-            // 若手研究者数をカウント
-            let youngResearcherCount = 0;
-            apiResponse.results.forEach(researcher => {
-                if (researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1) {
-                    youngResearcherCount++;
-                }
-            });
-            
-            // 成功メッセージ
-            let html = `
-                <div class="alert alert-success">
-                    「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
-                    ${apiResponse.total}件見つかりました。
-                    ${youngResearcherCount > 0 ? `<span style="color: #ff6b6b; font-weight: bold;">🌟 若手研究者: ${youngResearcherCount}名</span>` : ''}
-                    <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
+    // 選択中の大学フィルタがある場合、その情報を表示するエリアを生成
+    if (window.selectedUniversities && window.selectedUniversities.length > 0) {
+        html += `
+            <div class="alert alert-info" style="margin-bottom: 20px; border-left: 4px solid #667eea;">
+                <h5 style="font-size: 16px; color: #2c3e50; margin-bottom: 10px;">🏫 絞り込み中の大学</h5>
+                <div style="margin-bottom: 10px;">
+                    ${window.selectedUniversities.map(univ => `<span class="filter-active-badge">${univ}</span>`).join('')}
                 </div>
-            `;
-            
-            // キーワード拡張情報の表示
-            if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
-                const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
-                html += `
-                    <div class="expanded-keywords">
-                        <strong>🧠 AIによるキーワード拡張:</strong><br>
-                        <div style="margin-top: 8px;">
-                            ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
+                <hr style="margin: 15px 0; border-color: rgba(0,0,0,0.1);">
+                <p style="font-size: 14px; color: #495057;">
+                    絞り込みの変更・解除は、ページ上部の「大学名でフィルタリング」のチェックを操作してください。
+                </p>
+            </div>
+        `;
+    }
+    // ★★★ ここまでが修正・追加箇所 ★★★
 
-            // 研究者カードの生成
-            apiResponse.results.forEach((researcher, index) => {
-                // 最初の研究者のデータ構造を確認
-                if (index === 0) {
-                    console.log('📦 最初の研究者データ:', researcher);
-                    console.log('🔑 データのキー:', Object.keys(researcher));
-                }
-                const name = researcher.name_ja || researcher.name_en || '名前不明';
-                const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
-                const keywords = researcher.research_keywords_ja || 'N/A';
-                const fields = researcher.research_fields_ja || 'N/A';
-                const profile = researcher.profile_ja || 'N/A';
-                const paper = researcher.paper_title_ja_first || 'N/A';
-                const project = researcher.project_title_ja_first || 'N/A';
-                const researchmapUrl = researcher.researchmap_url || '#';
-                // 若手研究者判定の取得（大文字小文字の両方に対応）
-                const isYoungResearcher = researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1;
-                const youngReasons = researcher.young_researcher_reasons || [];
-                
-                // デバッグ: 若手研究者判定の詳細
-                if (isYoungResearcher) {
-                    console.log(`✅ ${name}は若手研究者です: ${youngReasons.join('、')}`);
-                }
-                
-                // デバッグ用: 全ての研究者の若手判定情報を表示
-                console.log(`🔍 ${apiResponse.method}検索 - ${name}の若手判定:`, {
-                    name,
-                    is_young_researcher: researcher.is_young_researcher,
-                    young_researcher_reasons: researcher.young_researcher_reasons,
-                    main_affiliation_job_ja: researcher.main_affiliation_job_ja,
-                    main_affiliation_job_title_ja: researcher.main_affiliation_job_title_ja,
-                    profile_ja_first_300: researcher.profile_ja ? researcher.profile_ja.substring(0, 300) : null
-                });
+    // 内部評価モードの場合の処理
+    if (apiResponse.evaluation_mode === 'internal' && apiResponse.evaluated_results) {
+        displayInternalEvaluationResults(apiResponse);
+        return;
+    }
+    
+    // 検索結果が0件の場合の表示
+    if (!apiResponse.results || apiResponse.results.length === 0) {
+        resultsContainer.innerHTML = html + `
+            <div class="alert alert-info">
+                「${apiResponse.query}」に該当する研究者は見つかりませんでした。
+            </div>
+        `;
+        return;
+    }
 
-                // スコア表示
-                let scoreText = '';
-                if (apiResponse.method === 'keyword' && researcher.relevance_score !== null) {
-                    scoreText = ` (関連度: ${researcher.relevance_score})`;
-                } else if (apiResponse.method === 'semantic' && researcher.distance !== null) {
-                    scoreText = ` (距離: ${researcher.distance.toFixed(4)})`;
-                }
-
-                html += `
-                    <div class="researcher-card">
-                        <div class="researcher-name">
-                            ${name} (${affiliation})${scoreText}
-                            ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
-                        </div>
-                        
-                        ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
-                        ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
-                        ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
-                        ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
-                        ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
-                        
-                        ${researcher.llm_summary ? `
-                            <div class="ai-summary">
-                                <strong>🤖 AI要約:</strong> 
-                                <div class="ai-analysis-content">${convertMarkdownToHtml(researcher.llm_summary)}</div>
-                            </div>
-                        ` : ''}
-                        
-                        ${isYoungResearcher && youngReasons.length > 0 ? `
-                            <div class="young-researcher-info">
-                                <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
-                            </div>
-                        ` : ''}
-                        
-                        <div class="button-group">
-                            <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
-                            <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
-                            ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
-                            <a href="researcher-analysis.html?name=${encodeURIComponent(name)}&url=${encodeURIComponent(researchmapUrl)}&query=${encodeURIComponent(apiResponse.query)}" class="btn btn-secondary">📊 分析結果管理</a>
-                        </div>
-                    </div>
-                `;
-            });
-
-            resultsContainer.innerHTML = html;
+    // 若手研究者数をカウント
+    let youngResearcherCount = 0;
+    apiResponse.results.forEach(researcher => {
+        if (researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1) {
+            youngResearcherCount++;
         }
+    });
+    
+    // 検索成功メッセージを追加
+    html += `
+        <div class="alert alert-success">
+            「${apiResponse.query}」の${apiResponse.method === 'semantic' ? 'セマンティック' : 'キーワード'}検索結果: 
+            ${apiResponse.total}件見つかりました。
+            ${youngResearcherCount > 0 ? `<span style="color: #ff6b6b; font-weight: bold;">🌟 若手研究者: ${youngResearcherCount}名</span>` : ''}
+            <small>(実行時間: ${apiResponse.execution_time.toFixed(2)}秒)</small>
+        </div>
+    `;
+    
+    // キーワード拡張情報の表示
+    if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
+        const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
+        html += `
+            <div class="expanded-keywords">
+                <strong>🧠 AIによるキーワード拡張:</strong><br>
+                <div style="margin-top: 8px;">
+                    ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // 研究者カードの生成 (以降のコードは変更なし)
+    apiResponse.results.forEach((researcher, index) => {
+        // ... (既存の研究者カード生成ロジック) ...
+        const name = researcher.name_ja || researcher.name_en || '名前不明';
+        const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+        const keywords = researcher.research_keywords_ja || 'N/A';
+        const fields = researcher.research_fields_ja || 'N/A';
+        const profile = researcher.profile_ja || 'N/A';
+        const paper = researcher.paper_title_ja_first || 'N/A';
+        const project = researcher.project_title_ja_first || 'N/A';
+        const researchmapUrl = researcher.researchmap_url || '#';
+        const isYoungResearcher = researcher.is_young_researcher === true || researcher.is_young_researcher === 'true' || researcher.is_young_researcher === 1;
+        const youngReasons = researcher.young_researcher_reasons || [];
+        
+        let scoreText = '';
+        if (apiResponse.method === 'keyword' && researcher.relevance_score !== null) {
+            scoreText = ` (関連度: ${researcher.relevance_score})`;
+        } else if (apiResponse.method === 'semantic' && researcher.distance !== null) {
+            scoreText = ` (距離: ${researcher.distance.toFixed(4)})`;
+        }
+
+        html += `
+            <div class="researcher-card">
+                <div class="researcher-name">
+                    ${name} (${affiliation})${scoreText}
+                    ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
+                </div>
+                
+                ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
+                ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
+                ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+                ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
+                
+                ${researcher.llm_summary ? `
+                    <div class="ai-summary">
+                        <strong>🤖 AI要約:</strong> 
+                        <div class="ai-analysis-content">${convertMarkdownToHtml(researcher.llm_summary)}</div>
+                    </div>
+                ` : ''}
+                
+                ${isYoungResearcher && youngReasons.length > 0 ? `
+                    <div class="young-researcher-info">
+                        <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
+                    </div>
+                ` : ''}
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
+                    <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
+                    ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                    <a href="researcher-analysis.html?name=${encodeURIComponent(name)}&url=${encodeURIComponent(researchmapUrl)}&query=${encodeURIComponent(apiResponse.query)}" class="btn btn-secondary">📊 分析結果管理</a>
+                </div>
+            </div>
+        `;
+    });
+
+    // 最終的に生成したHTMLをコンテナにセット
+    resultsContainer.innerHTML = html;
+}
 
         // 検索状態保存・復元機能
         function saveSearchState(searchParams, apiResponse) {
