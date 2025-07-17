@@ -1753,14 +1753,11 @@ async function generateSingleSummary(researcherId, researchmapUrl, query) { // q
             const params = state.params;
             document.getElementById('api-search-input').value = params.query || '';
             document.getElementById('search-method').value = params.method || 'semantic';
-            const maxResultsEl_state = document.getElementById('max-results');
-            if (maxResultsEl_state) maxResultsEl_state.value = params.maxResults || 5;
-            const maxResultsDisplayEl_state = document.getElementById('max-results-display');
-            if (maxResultsDisplayEl_state) maxResultsDisplayEl_state.textContent = params.maxResults || 5;
+            document.getElementById('max-results').value = params.maxResults || 5;
+            document.getElementById('max-results-display').textContent = params.maxResults || 5;
             
             document.getElementById('llm-expansion').checked = params.useLLMExpansion || false;
-            const llmSummaryEl_state = document.getElementById('llm-summary');
-            if (llmSummaryEl_state) llmSummaryEl_state.checked = params.useLLMSummary !== undefined ? params.useLLMSummary : true;
+            document.getElementById('llm-summary').checked = params.useLLMSummary !== undefined ? params.useLLMSummary : true;
             document.getElementById('young-researcher-filter').checked = params.youngResearcherFilter || false;
             
             if (params.universityFilter && params.universityFilter.length > 0) {
@@ -2606,10 +2603,6 @@ window.displayUniversityList = function() {
             if (targetPage) {
                 targetPage.classList.remove('hidden');
                 console.log('✅ ページ表示:', page);
-                
-                // ページ表示後の状態を確認
-                const isNowVisible = !targetPage.classList.contains('hidden');
-                console.log('📋 ページ表示後の状態:', page, isNowVisible);
             } else {
                 console.error('❌ ページが見つかりません:', page + '-page');
             }
@@ -2620,9 +2613,6 @@ window.displayUniversityList = function() {
             if (event && event.target) {
                 event.target.classList.add('active');
             }
-            
-            // ページ切り替えのデバッグ情報
-            console.log('📋 ページ切り替え完了:', page);
             
             // 特定ページでの追加処理
             if (page === 'researchers') {
@@ -2639,24 +2629,9 @@ window.displayUniversityList = function() {
             } else if (page === 'projects') {
                 // プロジェクトページの場合は仮プロジェクト一覧を更新
                 console.log('📋 プロジェクトページ表示時に一覧を更新');
-                
-                // DOMが更新されるのを待ってから実行
                 setTimeout(() => {
-                    const projectsPage = document.getElementById('projects-page');
-                    const isVisible = projectsPage && !projectsPage.classList.contains('hidden');
-                    console.log('📋 setTimeout内でのプロジェクトページ状態:', isVisible);
-                    
-                    if (isVisible) {
-                        loadTempProjects();
-                    } else {
-                        console.error('❌ プロジェクトページがまだ非表示状態です');
-                        // 再度試行
-                        setTimeout(() => {
-                            console.log('🔄 再度loadTempProjectsを実行');
-                            loadTempProjects();
-                        }, 200);
-                    }
-                }, 100);
+                    loadTempProjects();
+                }, 100); // 少し遅延させてDOMが更新されるのを待つ
             }
         }
 
@@ -2751,10 +2726,11 @@ window.displayUniversityList = function() {
             // 保存済み分析の数を表示
             updateSavedAnalysisCount();
             
-            // 注意: DOMContentLoadedでは仮プロジェクトを読み込まない
-            // プロジェクトページが表示されていない状態でloadTempProjectsを呼ぶと
-            // 非表示の要素に対して処理が行われ、ページ切り替え時に表示されない
-            console.log('📋 DOMContentLoaded完了 - 仮プロジェクト読み込みはページ表示時に実行');
+            // プロジェクトページ表示時に仮プロジェクトを読み込み
+            if (document.getElementById('temp-projects-list')) {
+                console.log('📋 仮プロジェクト一覧の読み込みを開始');
+                loadTempProjects();
+            }
         });
         
         // 仮プロジェクト一覧を読み込み
@@ -2769,11 +2745,6 @@ window.displayUniversityList = function() {
                 console.error('❌ temp-projects-listエレメントが見つかりません');
                 return;
             }
-            
-            // コンテナの可視状態をチェック
-            const projectsPage = document.getElementById('projects-page');
-            const isVisible = projectsPage && !projectsPage.classList.contains('hidden');
-            console.log('📋 プロジェクトページの表示状態:', isVisible);
             
             if (tempProjects.length === 0) {
                 console.log('📋 プロジェクトが0件のため、空のメッセージを表示');
@@ -2815,11 +2786,6 @@ window.displayUniversityList = function() {
             console.log('📋 生成されたHTMLの長さ:', html.length);
             listContainer.innerHTML = html;
             console.log('✅ 仮プロジェクト一覧の表示完了');
-            
-            // デバッグ情報を追加表示
-            if (!isVisible) {
-                console.warn('⚠️ プロジェクトページが非表示状態でloadTempProjectsが実行されました');
-            }
         }
         
         // 保存済み分析の数を更新
