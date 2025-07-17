@@ -1422,10 +1422,23 @@
             resultsContainer.innerHTML = html;
         }
         
-// API検索結果の表示関数 (ResearchMapリンク復活版)
+// API検索結果の表示関数 (自動フィルタ復活版)
 window.displayAPISearchResults = function(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');
     
+    // ▼▼▼ 自動フィルタ機能（復活）▼▼▼
+    // 検索結果がある場合、大学名リストを抽出し、フィルタの選択状態を更新する
+    if (fullSearchResults && fullSearchResults.length > 0) {
+        const uniqueUniversities = new Set(
+            fullSearchResults.map(r => r.main_affiliation_name_ja || r.main_affiliation_name_en).filter(Boolean)
+        );
+        window.selectedUniversities = Array.from(uniqueUniversities);
+        
+        // 更新された選択状態で、大学フィルタのチェックボックス表示を再描画
+        displayUniversityList(); 
+    }
+    // ▲▲▲ 自動フィルタ機能（復活）▲▲▲
+
     // ページネーションのロジック
     const totalResults = fullSearchResults.length;
     const totalPages = Math.ceil(totalResults / resultsPerPage);
@@ -1500,7 +1513,6 @@ window.displayAPISearchResults = function(apiResponse) {
                      <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}', '${apiResponse.query.replace(/'/g, "\\'")}')">🤖 AI要約を生成</button>
                      <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
                      <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
-                     
                      ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
                 </div>
             </div>
