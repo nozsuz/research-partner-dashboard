@@ -1422,7 +1422,7 @@
             resultsContainer.innerHTML = html;
         }
         
-// API検索結果の表示関数 (ページネーション機能 ＋ 個別要約ボタン付き)
+// API検索結果の表示関数 (ResearchMapリンク復活版)
 window.displayAPISearchResults = function(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');
     
@@ -1461,48 +1461,51 @@ window.displayAPISearchResults = function(apiResponse) {
     `;
 
     // 3. ページに表示する研究者カードの生成
-paginatedResults.forEach(researcher => {
-    const name = researcher.name_ja || researcher.name_en || '名前不明';
-    const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
-    const keywords = researcher.research_keywords_ja || 'N/A';
-    const fields = researcher.research_fields_ja || 'N/A';
-    const profile = researcher.profile_ja || 'N/A';
-    const paper = researcher.paper_title_ja_first || 'N/A';
-    const project = researcher.project_title_ja_first || 'N/A';
-    const researchmapUrl = researcher.researchmap_url || '#';
-    const isYoungResearcher = researcher.is_young_researcher;
-    const youngReasons = researcher.young_researcher_reasons || [];
-    const researcherId = (researchmapUrl.split('/').pop() || (name + affiliation)).replace(/[^a-zA-Z0-9]/g, '');
+    paginatedResults.forEach(researcher => {
+        const name = researcher.name_ja || researcher.name_en || '名前不明';
+        const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+        const keywords = researcher.research_keywords_ja || 'N/A';
+        const fields = researcher.research_fields_ja || 'N/A';
+        const profile = researcher.profile_ja || 'N/A';
+        const paper = researcher.paper_title_ja_first || 'N/A';
+        const project = researcher.project_title_ja_first || 'N/A';
+        const researchmapUrl = researcher.researchmap_url || '#';
+        const isYoungResearcher = researcher.is_young_researcher;
+        const youngReasons = researcher.young_researcher_reasons || [];
+        
+        const researcherId = (researchmapUrl.split('/').pop() || (name + affiliation)).replace(/[^a-zA-Z0-9]/g, '');
 
-    html += `
-        <div class="researcher-card" id="card-${researcherId}">
-            <div class="researcher-name">
-                ${name} (${affiliation})
-                ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
-            </div>
-            
-            ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
-            ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
-            ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
-            ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
-            ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
-            
-            ${isYoungResearcher && youngReasons.length > 0 ? `
-                <div class="young-researcher-info">
-                    <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
+        html += `
+            <div class="researcher-card" id="card-${researcherId}">
+                <div class="researcher-name">
+                    ${name} (${affiliation})
+                    ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
                 </div>
-            ` : ''}
+                
+                ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
+                ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
+                ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+                ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
+                
+                ${isYoungResearcher && youngReasons.length > 0 ? `
+                    <div class="young-researcher-info">
+                        <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
+                    </div>
+                ` : ''}
 
-            <div id="summary-container-${researcherId}" class="ai-summary" style="display: none; margin-top: 15px;"></div>
-            
-            <div class="button-group">
-                 <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}', '${apiResponse.query.replace(/'/g, "\\'")}')">🤖 AI要約を生成</button>
-                 <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
-                 <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
+                <div id="summary-container-${researcherId}" class="ai-summary" style="display: none; margin-top: 15px;"></div>
+                
+                <div class="button-group">
+                     <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}', '${apiResponse.query.replace(/'/g, "\\'")}')">🤖 AI要約を生成</button>
+                     <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
+                     <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
+                     
+                     ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                </div>
             </div>
-        </div>
-    `;
-});
+        `;
+    });
 
     // 4. ページネーションボタンの生成
     if (totalPages > 1) {
