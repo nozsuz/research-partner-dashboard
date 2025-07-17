@@ -2591,21 +2591,38 @@ window.displayUniversityList = function() {
             openProjectSelectModal(researcher);
         }
 
-        window.showPage = function(page) {
-            console.log('🔄 ページ切り替え:', page);
-            
-            // すべてのページを非表示
-            const pages = document.querySelectorAll('.page');
-            pages.forEach(p => p.classList.add('hidden'));
-            
-            // 選択されたページを表示
-            const targetPage = document.getElementById(page + '-page');
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-                console.log('✅ ページ表示:', page);
-            } else {
-                console.error('❌ ページが見つかりません:', page + '-page');
-            }
+window.showPage = function(page) {
+    console.log('🔄 ページ切り替え:', page);
+    
+    // すべてのページを非表示
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(p => p.classList.add('hidden'));
+    
+    // 選択されたページを表示
+    const targetPage = document.getElementById(page + '-page');
+    if (targetPage) {
+        targetPage.classList.remove('hidden');
+        console.log('✅ ページ表示:', page);
+
+        // ▼▼▼ ここから追加 ▼▼▼
+        // 表示したページ内のタブを初期状態に戻す
+        const tabs = targetPage.querySelectorAll('.tab');
+        const tabContents = targetPage.querySelectorAll('.tab-content');
+
+        if (tabs.length > 0 && tabContents.length > 0) {
+            // 全てのタブとコンテンツから 'active' を削除
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+
+            // 最初のタブとコンテンツに 'active' を設定
+            tabs[0].classList.add('active');
+            tabContents[0].classList.add('active');
+        }
+        // ▲▲▲ 追加ここまで ▲▲▲
+
+    } else {
+        console.error('❌ ページが見つかりません:', page + '-page');
+    }
             
             // メニューアイテムのactive状態を更新
             const menuItems = document.querySelectorAll('.menu-item');
