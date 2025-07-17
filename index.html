@@ -1422,22 +1422,18 @@
             resultsContainer.innerHTML = html;
         }
         
-// API検索結果の表示関数 (自動フィルタ復活版)
+// API検索結果の表示関数 (全機能統合 最終版)
 window.displayAPISearchResults = function(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');
     
-    // ▼▼▼ 自動フィルタ機能（復活）▼▼▼
-    // 検索結果がある場合、大学名リストを抽出し、フィルタの選択状態を更新する
+    // 自動フィルタ機能
     if (fullSearchResults && fullSearchResults.length > 0) {
         const uniqueUniversities = new Set(
             fullSearchResults.map(r => r.main_affiliation_name_ja || r.main_affiliation_name_en).filter(Boolean)
         );
         window.selectedUniversities = Array.from(uniqueUniversities);
-        
-        // 更新された選択状態で、大学フィルタのチェックボックス表示を再描画
         displayUniversityList(); 
     }
-    // ▲▲▲ 自動フィルタ機能（復活）▲▲▲
 
     // ページネーションのロジック
     const totalResults = fullSearchResults.length;
@@ -1472,6 +1468,20 @@ window.displayAPISearchResults = function(apiResponse) {
             ( ${currentPage} / ${totalPages} ページ目を表示中 )
         </div>
     `;
+
+    // ▼▼▼ AIキーワード拡張の表示（復活）▼▼▼
+    if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
+        const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
+        html += `
+            <div class="expanded-keywords">
+                <strong>🧠 AIによるキーワード拡張:</strong><br>
+                <div style="margin-top: 8px;">
+                    ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                </div>
+            </div>
+        `;
+    }
+    // ▲▲▲ AIキーワード拡張の表示（復活）▲▲▲
 
     // 3. ページに表示する研究者カードの生成
     paginatedResults.forEach(researcher => {
