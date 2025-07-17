@@ -1427,7 +1427,7 @@
             resultsContainer.innerHTML = html;
         }
         
-// API検索結果の表示関数 (ページネーション機能付き)
+// API検索結果の表示関数 (ページネーション機能付き・詳細情報復活版)
 window.displayAPISearchResults = function(apiResponse) {
     const resultsContainer = document.getElementById('api-search-results');
     
@@ -1441,7 +1441,7 @@ window.displayAPISearchResults = function(apiResponse) {
     // --- 表示HTMLの生成開始 ---
     let html = '';
 
-    // 1. 絞り込み大学の表示 (変更なし)
+    // 1. 絞り込み大学の表示
     if (window.selectedUniversities && window.selectedUniversities.length > 0) {
         html += `
             <div class="alert alert-info" style="margin-bottom: 20px; border-left: 4px solid #667eea;">
@@ -1467,44 +1467,68 @@ window.displayAPISearchResults = function(apiResponse) {
 
     // 3. ページに表示する研究者カードの生成
     paginatedResults.forEach(researcher => {
+        // ▼▼▼【復活させる情報】変数を定義 ▼▼▼
         const name = researcher.name_ja || researcher.name_en || '名前不明';
         const affiliation = researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en || '所属不明';
+        const keywords = researcher.research_keywords_ja || 'N/A';
+        const fields = researcher.research_fields_ja || 'N/A';
+        const profile = researcher.profile_ja || 'N/A';
+        const paper = researcher.paper_title_ja_first || 'N/A';
+        const project = researcher.project_title_ja_first || 'N/A';
         const researchmapUrl = researcher.researchmap_url || '#';
         const isYoungResearcher = researcher.is_young_researcher;
+        const youngReasons = researcher.young_researcher_reasons || [];
+        // ▲▲▲ ここまで ▲▲▲
         
+        // ▼▼▼【復活させる情報】カードのHTML構造を元に戻す ▼▼▼
         html += `
             <div class="researcher-card">
                 <div class="researcher-name">
                     ${name} (${affiliation})
                     ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
                 </div>
+                
+                ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
+                ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
+                ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
+                ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
+                
+                ${researcher.llm_summary ? `
+                    <div class="ai-summary">
+                        <strong>🤖 AI要約:</strong> 
+                        <div class="ai-analysis-content">${convertMarkdownToHtml(researcher.llm_summary)}</div>
+                    </div>
+                ` : ''}
+                
+                ${isYoungResearcher && youngReasons.length > 0 ? `
+                    <div class="young-researcher-info">
+                        <strong>🌟 若手研究者の判定理由:</strong> ${youngReasons.join('、')}
+                    </div>
+                ` : ''}
+                
                 <div class="button-group">
                      <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
                      <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
                 </div>
             </div>
         `;
+        // ▲▲▲ ここまで ▲▲▲
     });
 
     // 4. ページネーションボタンの生成
     if (totalPages > 1) {
         html += '<div class="pagination">';
-        // 「前へ」ボタン
         html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; 前へ</button>`;
-
-        // ページ番号ボタン
         for (let i = 1; i <= totalPages; i++) {
             html += `<button onclick="changePage(${i})" class="${currentPage === i ? 'active' : ''}">${i}</button>`;
         }
-
-        // 「次へ」ボタン
         html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>次へ &raquo;</button>`;
         html += '</div>';
     }
 
     resultsContainer.innerHTML = html;
 };
-
 // ★★★ ページ切り替え用の新しい関数を追加 ★★★
 window.changePage = function(page) {
     currentPage = page;
