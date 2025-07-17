@@ -622,11 +622,12 @@
                     <!-- 大学フィルターセクション -->
                     <div id="university-filter-section" style="margin-bottom: 20px;">
                         <h4 style="margin-bottom: 15px;">🏫 大学名でフィルタリング</h4>
+                        <div class="form-group">
+                            <input type="text" id="university-search-input" class="form-control" 
+                                placeholder="大学名を検索..." oninput="displayUniversityList()">
+                        </div>
                         <div id="university-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; background: #f8f9fa;">
-                            <div class="loading" style="text-align: center; padding: 20px;">
-                                <div class="spinner"></div>
-                                大学リストを読み込み中...
-                            </div>
+                            
                         </div>
                         <div style="margin-top: 10px; text-align: right;">
                             <button class="btn btn-secondary" onclick="clearUniversityFilter()" style="font-size: 14px;">フィルターをクリア</button>
@@ -1873,41 +1874,58 @@ window.displayAPISearchResults = function(apiResponse) {
                 `;
             }
         }
-        
-// 大学リストを表示
+        // 大学リストを表示 (検索機能・表示件数制限付き)
 window.displayUniversityList = function() {
     const container = document.getElementById('university-list-container');
-    
-    if (window.universityList.length === 0) {
+    const searchInput = document.getElementById('university-search-input');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+    if (!window.universityList || window.universityList.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #6c757d;">大学データがありません</p>';
         return;
     }
-    
-    // 全ての大学を表示
-    const allUniversities = window.universityList;
-    
-    let html = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">';
-    
-    allUniversities.forEach(univ => {
-        const isChecked = window.selectedUniversities.includes(univ.name);
-        html += `
-            <div class="checkbox-group" style="margin-bottom: 5px;">
-                <input type="checkbox" id="univ-${univ.name.replace(/[^\w\s]/gi, '')}" 
-                       value="${univ.name}" 
-                       ${isChecked ? 'checked' : ''}
-                       onchange="toggleUniversityFilter('${univ.name.replace(/'/g, "\\'")}')"
-                       style="margin-right: 8px;">
-                <label for="univ-${univ.name.replace(/[^\w\s]/gi, '')}" style="margin-bottom: 0; cursor: pointer;">
-                    ${univ.name} <span style="color: #6c757d; font-size: 12px;">(${univ.count.toLocaleString()}名)</span>
-                </label>
-            </div>
-        `;
-    });
-    
-    html += '</div>';
+
+    // 1. 検索ワードで大学リストを絞り込む
+    const filteredUniversities = searchTerm
+        ? window.universityList.filter(univ => univ.name.toLowerCase().includes(searchTerm))
+        : window.universityList;
+
+    // 2. 表示件数を上位100件に制限して、パフォーマンスを確保
+    const universitiesToShow = filteredUniversities.slice(0, 100);
+
+    let html = '';
+    if (universitiesToShow.length === 0) {
+        html = '<p style="text-align: center; color: #6c757d;">該当する大学はありません</p>';
+    } else {
+        html += '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">';
+        universitiesToShow.forEach(univ => {
+            const isChecked = window.selectedUniversities.includes(univ.name);
+            const univId = `univ-${univ.name.replace(/[^\w\s]/gi, '')}`; // IDをサニタイズ
+            html += `
+                <div class="checkbox-group" style="margin-bottom: 5px;">
+                    <input type="checkbox" id="${univId}" 
+                           value="${univ.name}" 
+                           ${isChecked ? 'checked' : ''}
+                           onchange="toggleUniversityFilter('${univ.name.replace(/'/g, "\\'")}')"
+                           style="margin-right: 8px;">
+                    <label for="${univId}" style="margin-bottom: 0; cursor: pointer;">
+                        ${univ.name} <span style="color: #6c757d; font-size: 12px;">(${univ.count.toLocaleString()}名)</span>
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        // 検索結果が100件より多い場合にメッセージを表示
+        if (filteredUniversities.length > 100) {
+            html += `<p style="text-align: center; color: #6c757d; margin-top: 10px; font-size: 14px;">
+                さらにキーワードを絞り込んでください (全${filteredUniversities.length}件中、上位100件を表示中)
+            </p>`;
+        }
+    }
     
     container.innerHTML = html;
-}
+};
         
         // 大学フィルターの切り替え
         window.toggleUniversityFilter = function(universityName) {
