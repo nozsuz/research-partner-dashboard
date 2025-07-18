@@ -582,27 +582,33 @@
                             <label for="young-researcher-filter">🌟 若手研究者のみ表示</label>
                         </div>
 
-                    <div class="form-group">
-                        <input type="text" class="form-control" id="api-search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
+                        <div class="form-group">
+                            <label for="api-search-input">検索キーワード</label>
+                            <input type="text" class="form-control" id="api-search-input" placeholder="例: 人工知能、再生医療、ナノ材料、カーボンニュートラル">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exclude-keywords-input">除外キーワード（カンマやスペース区切り）</label>
+                            <input type="text" class="form-control" id="exclude-keywords-input" placeholder="例: 動物実験, 倫理問題">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="performAPISearch()" style="flex: 1;">
+                                🚀 研究者を検索
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearSearchAndResults()" style="width: 120px;">
+                                🗑️ クリア
+                            </button>
+                        </div>
                     </div>
                     
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-primary" onclick="performAPISearch()" style="flex: 1;">
-                            🚀 研究者を検索
-                        </button>
-                        <button class="btn btn-secondary" onclick="clearSearchAndResults()" style="width: 120px;">
-                            🗑️ クリア
-                        </button>
+                    <div id="api-search-results" style="margin-top: 20px;">
+                        <div class="alert alert-info">
+                            キーワードを入力して「研究者を検索」ボタンを押してください。
+                        </div>
                     </div>
-                </div>
-                
-                <div id="api-search-results" style="margin-top: 20px;">
-                    <div class="alert alert-info">
-                        キーワードを入力して「研究者を検索」ボタンを押してください。
-                    </div>
-                </div>
 
 
+                </div>
             </div>
 
             <div class="footer">
@@ -1191,6 +1197,8 @@ async function generateSingleSummary(researcherId, researchmapUrl, query) { // q
         window.clearSearchAndResults = function() {
             // フォームをリセット
             document.getElementById('api-search-input').value = '';
+            // ▼▼▼ 除外キーワード入力欄もクリア ▼▼▼
+            document.getElementById('exclude-keywords-input').value = '';
             document.getElementById('search-method').value = 'semantic';
             document.getElementById('llm-expansion').checked = false;
             document.getElementById('young-researcher-filter').checked = false;
@@ -1221,12 +1229,18 @@ window.performAPISearch = async function() {
         return;
     }
 
-    // --- ▼▼▼ ここから修正 ▼▼▼ ---
+    // --- ▼▼▼ ここから変更 ▼▼▼ ---
     // 検索オプションの取得
     const searchMethod = document.getElementById('search-method').value;
     const useLLMExpansion = document.getElementById('llm-expansion').checked;
     const youngResearcherFilter = document.getElementById('young-researcher-filter').checked;
-    // --- ▲▲▲ ここまで修正 ▲▲▲ ---
+    
+    // 除外キーワードを取得
+    const excludeKeywordsInput = document.getElementById('exclude-keywords-input').value.trim();
+    // カンマやスペースで区切り、空の要素を除外してリスト化
+    const excludeKeywordsList = excludeKeywordsInput 
+        ? excludeKeywordsInput.split(/[\s,、]+/).filter(kw => kw.length > 0) 
+        : null;
 
     const resultsContainer = document.getElementById('api-search-results');
     
@@ -1239,18 +1253,18 @@ window.performAPISearch = async function() {
     `;
 
     try {
-        // --- ▼▼▼ ここから修正 ▼▼▼ ---
-        // API検索実行 (maxResultsを100に固定)
+        // API検索パラメータを構築
         const searchParams = {
             query: searchQuery,
             method: searchMethod,
-            maxResults: 100,
-            useLLMExpansion: useLLMExpansion,
-            useInternalEvaluation: false,
-            youngResearcherFilter: youngResearcherFilter,
-            universityFilter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
+            maxResults: 100, // フロント側では常に100件取得してページネーション
+            exclude_keywords: excludeKeywordsList, // 除外キーワードを追加
+            use_llm_expansion: useLLMExpansion,
+            use_internal_evaluation: false,
+            young_researcher_filter: youngResearcherFilter,
+            university_filter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
         };
-        // --- ▲▲▲ ここまで修正 ▲▲▲ ---
+        // --- ▲▲▲ ここまで変更 ▲▲▲ ---
 
         const apiResponse = await apiClient.searchResearchers(searchParams);
         
