@@ -1257,14 +1257,16 @@ window.performAPISearch = async function() {
         const searchParams = {
             query: searchQuery,
             method: searchMethod,
-            maxResults: 100, // フロント側では常に100件取得してページネーション
-            excludeKeywords: excludeKeywordsList, // 除外キーワードを追加
-            use_llm_expansion: useLLMExpansion,
-            use_internal_evaluation: false,
-            young_researcher_filter: youngResearcherFilter,
-            university_filter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
+            
+            // ▼▼▼ ここから下のキー名をすべてキャメルケースに統一 ▼▼▼
+            maxResults: 100,
+            excludeKeywords: excludeKeywordsList,
+            useLlmExpansion: useLLMExpansion,
+            useInternalEvaluation: false,
+            youngResearcherFilter: youngResearcherFilter,
+            universityFilter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
+            // ▲▲▲ 修正完了 ▲▲▲
         };
-        // --- ▲▲▲ ここまで変更 ▲▲▲ ---
 
         const apiResponse = await apiClient.searchResearchers(searchParams);
         
