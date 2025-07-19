@@ -1110,10 +1110,10 @@ window.displayAPISearchResults = function(apiResponse) {
                 <div id="summary-container-${researcherId}" class="ai-summary" style="display: none; margin-top: 15px;"></div>
                 
                 <div class="button-group">
-                     <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}', '${apiResponse.query.replace(/'/g, "\\'")}')">🤖 AI要約を生成</button>
-                     <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
-                     <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
-                     ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
+                       <button class="btn btn-secondary" onclick="generateSingleSummary('${researcherId}', '${researchmapUrl}', '${apiResponse.query.replace(/'/g, "\\'")}')">🤖 AI要約を生成</button>
+                       <button class="btn btn-primary" onclick="analyzeResearcherDetail('${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>
+                       <button class="btn btn-primary" onclick="addToProjectCandidates('${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
+                       ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
                 </div>
             </div>
         `;
