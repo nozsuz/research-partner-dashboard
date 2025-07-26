@@ -729,16 +729,15 @@
                             </div>
                             
                             <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                                ${!hasDetailedAnalysis && analysisData && analysisData.analysis_id ? `
-                                    <button class="btn btn-primary" onclick="runDetailedAnalysisFromProject('${analysisData.analysis_id}')">
-                                        🤖 AI詳細分析を実行
-                                    </button>
-                                ` : ''}
-                                ${hasDetailedAnalysis ? `
-                                    <a href="researcher-analysis.html?id=${analysisData.analysis_id}" class="btn btn-primary" style="text-decoration: none;">
-                                        📊 詳細を見る
+                                ${analysisData && analysisData.analysis_id ? `
+                                    <a href="researcher-analysis.html?id=${analysisData.analysis_id}" class="btn btn-primary">
+                                        ${hasDetailedAnalysis ? '📊 詳細を見る' : '🤖 AI詳細分析'}
                                     </a>
-                                ` : ''}
+                                ` : `
+                                    <a href="researcher-analysis.html?name=${encodeURIComponent(researcher.name)}&url=${encodeURIComponent(researcher.url || '')}&query=${encodeURIComponent(researcher.query || '')}" class="btn btn-secondary">
+                                        分析データなし
+                                    </a>
+                                `}
                                 ${researcher.url ? `
                                     <a href="${researcher.url}" target="_blank" class="btn btn-secondary" style="text-decoration: none;">
                                         🔗 ResearchMap

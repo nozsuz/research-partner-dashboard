@@ -676,11 +676,32 @@
         
         // DOM読み込み完了時の処理
         document.addEventListener('DOMContentLoaded', function() {
+            migrateSavedAnalyses();
             activateCurrentMenuItem();
             initializeFromUrlParams();
             loadSavedAnalyses();
             setupModalCloseButtons();
         });
+
+        // 保存済みデータにIDや日付がない場合に付与する
+        function migrateSavedAnalyses() {
+            let savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            let needsUpdate = false;
+            savedAnalyses.forEach(analysis => {
+                if (!analysis.analysis_id) {
+                    analysis.analysis_id = `analysis_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                    needsUpdate = true;
+                }
+                // created_atが欠損、または無効な日付の場合に修復
+                if (!analysis.created_at || isNaN(new Date(analysis.created_at).getTime())) {
+                    analysis.created_at = new Date().toISOString();
+                    needsUpdate = true;
+                }
+            });
+            if (needsUpdate) {
+                localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+            }
+        }
 
         // サイドバーの現在地をアクティブにする
         function activateCurrentMenuItem() {
@@ -728,18 +749,28 @@
                 return;
             }
             
-            currentAnalysisData = { ...analysis }; // 元のデータをコピーして保持
+            // 常にcurrentAnalysisDataとフォームを設定
+            currentAnalysisData = { ...analysis }; 
             document.getElementById('researcher-name').value = analysis.researcher_name || '';
             document.getElementById('researchmap-url').value = analysis.researchmap_url || '';
             document.getElementById('analysis-query').value = analysis.query || '';
 
+            const saveBtn = document.getElementById('save-analysis-btn');
+
             if (analysis.analysis_result) {
+                // 分析済みの場合
                 document.getElementById('analysis-result-container').style.display = 'block';
                 displayAnalysisResult(analysis.analysis_result);
                 document.getElementById('add-current-to-project-btn').style.display = 'inline-block';
-                const saveBtn = document.getElementById('save-analysis-btn');
                 saveBtn.textContent = '✅ 保存済み';
                 saveBtn.disabled = true;
+            } else {
+                // 分析未実施の場合
+                document.getElementById('analysis-result-container').style.display = 'none';
+                document.getElementById('analysis-content').innerHTML = '';
+                document.getElementById('add-current-to-project-btn').style.display = 'none';
+                saveBtn.textContent = '💾 この分析結果を保存';
+                saveBtn.disabled = true; // 分析が完了するまで保存ボタンは無効
             }
         }
 
@@ -758,6 +789,7 @@
             const contentDiv = document.getElementById('analysis-content');
             resultContainer.style.display = 'block';
             contentDiv.innerHTML = `<div class="loading"><div class="spinner"></div>AI分析を実行中...</div>`;
+            document.getElementById('save-analysis-btn').disabled = true;
             
             try {
                 const result = await apiClient.analyzeResearcher(researchmapUrl, query, { name_ja: researcherName }, true);
@@ -767,14 +799,26 @@
                 }
                 
                 displayAnalysisResult(result.analysis);
+                
                 currentAnalysisData = {
+                    ...currentAnalysisData, // 既存のIDやcreated_atを保持
                     researchmap_url: researchmapUrl,
                     researcher_name: researcherName,
                     query: query,
                     analysis_result: result.analysis,
                     affiliation: result.analysis.affiliation || '不明',
-                    relevance_score: result.analysis.scores?.total || null
+                    relevance_score: result.analysis.scores?.total || null,
+                    updated_at: new Date().toISOString() // 更新日時をセット
                 };
+
+                // 新規分析の場合、IDと作成日時をセット
+                if (!currentAnalysisData.analysis_id) {
+                    currentAnalysisData.analysis_id = `analysis_${Date.now()}`;
+                }
+                if (!currentAnalysisData.created_at) {
+                    currentAnalysisData.created_at = new Date().toISOString();
+                }
+
                 document.getElementById('save-analysis-btn').disabled = false;
                 document.getElementById('add-current-to-project-btn').style.display = 'inline-block';
             } catch (error) {
@@ -853,6 +897,26 @@
             return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
         }
 
+        // 新規分析を実行
+        async function runNewAnalysis(analysisId) {
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+            if (!analysis) {
+                alert('指定された分析データが見つかりません');
+                return;
+            }
+            
+            document.getElementById('researcher-name').value = analysis.researcher_name || '';
+            document.getElementById('researchmap-url').value = analysis.researchmap_url || '';
+            document.getElementById('analysis-query').value = analysis.query || '';
+
+            // ページ上部にスクロール
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // 現在の分析データを更新して、保存ボタンが正しく機能するようにする
+            currentAnalysisData = { ...analysis };
+        }
+
         // 現在の分析を保存
         async function saveCurrentAnalysis() {
             if (!currentAnalysisData) {
@@ -861,24 +925,28 @@
             }
             
             const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
-            
-            // 既存の分析IDがあるか確認
+            const now = new Date().toISOString();
+
+            // IDと作成日時���確実に設定
+            if (!currentAnalysisData.analysis_id) {
+                currentAnalysisData.analysis_id = `analysis_${Date.now()}`;
+            }
+            if (!currentAnalysisData.created_at || isNaN(new Date(currentAnalysisData.created_at).getTime())) {
+                currentAnalysisData.created_at = now;
+            }
+            currentAnalysisData.updated_at = now;
+
             const existingIndex = savedAnalyses.findIndex(a => a.analysis_id === currentAnalysisData.analysis_id);
 
             if (existingIndex !== -1) {
-                // 既存の分析を更新（created_atは変更しない）
+                // 既存の分析を更新
                 savedAnalyses[existingIndex] = {
-                    ...savedAnalyses[existingIndex], // 既存のデータを展開
-                    ...currentAnalysisData, // 新しいデータで上書き
+                    ...savedAnalyses[existingIndex], // 念のため元のデータを展開
+                    ...currentAnalysisData // 新しいデータで上書き
                 };
             } else {
                 // 新しい分析として保存
-                const analysisData = { 
-                    ...currentAnalysisData, 
-                    analysis_id: `analysis_${Date.now()}`, 
-                    created_at: new Date().toISOString() 
-                };
-                savedAnalyses.push(analysisData);
+                savedAnalyses.push(currentAnalysisData);
             }
 
             localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
@@ -891,14 +959,41 @@
 
         // 保存済み分析一覧を読み込み・表示
         async function loadSavedAnalyses() {
-            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]').sort((a, b) => {
+                // 無効な日付を考慮したソート
+                const dateA = new Date(b.created_at).getTime();
+                const dateB = new Date(a.created_at).getTime();
+                if (isNaN(dateA)) return 1;
+                if (isNaN(dateB)) return -1;
+                return dateA - dateB;
+            });
+
             const listEl = document.getElementById('saved-analyses-list');
             if (savedAnalyses.length === 0) {
                 listEl.innerHTML = '<p>保存済みの分析結果はありません</p>';
                 return;
             }
+
             listEl.innerHTML = savedAnalyses.map(analysis => {
                 const hasDetails = !!analysis.analysis_result;
+                const hasKeywordData = hasDetails && analysis.analysis_result.keyword_analysis && (analysis.analysis_result.keyword_analysis.word_cloud?.length > 0 || (analysis.analysis_result.keyword_analysis.research_trends && Object.keys(analysis.analysis_result.keyword_analysis.research_trends).length > 0));
+
+                // 日付を安全にフォーマットする関数
+                const formatDate = (dateString) => {
+                    try {
+                        const date = new Date(dateString);
+                        if (isNaN(date.getTime())) {
+                            return 'N/A';
+                        }
+                        return date.toLocaleString('ja-JP');
+                    } catch (e) {
+                        return 'N/A';
+                    }
+                };
+                
+                const createdAt = formatDate(analysis.created_at);
+                const updatedAt = analysis.updated_at ? formatDate(analysis.updated_at) : null;
+
                 return `
                     <div class="saved-analysis-item">
                         <div class="analysis-header">
@@ -907,11 +1002,15 @@
                                 <p>所属: ${analysis.affiliation || '不明'}</p>
                                 <p>検索クエリ: 「${analysis.query}」</p>
                                 <p>総合評価スコア: ${analysis.relevance_score != null ? analysis.relevance_score + '/100' : 'N/A'}</p>
-                                <p><b>保存日時: ${new Date(analysis.created_at).toLocaleString('ja-JP')}</b></p>
+                                <p><b>保存日時: ${createdAt}</b></p>
+                                ${updatedAt ? `<p><b>更新日時: ${updatedAt}</b></p>` : ''}
                             </div>
                             <div class="analysis-buttons">
-                                ${hasDetails ? `<button class="btn btn-secondary" onclick="showSavedKeywordAnalysis('${analysis.analysis_id}')">📊 キーワード分析</button>` : ''}
-                                <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">👁️ 詳細を見る</button>
+                                ${hasKeywordData ? `<button class="btn btn-secondary" onclick="showSavedKeywordAnalysis('${analysis.analysis_id}')">📊 キーワード分析</button>` : ''}
+                                ${hasDetails 
+                                    ? `<button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">👁️ 詳細を見る</button>`
+                                    : `<button class="btn btn-primary" onclick="runNewAnalysis('${analysis.analysis_id}')">🤖 AI詳細分析</button>`
+                                }
                                 <button class="btn btn-primary" onclick="addAnalysisToProject('${analysis.analysis_id}')">➕ プロジェクトに追加</button>
                                 <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id}')">🗑️ 削除</button>
                             </div>
@@ -965,7 +1064,7 @@
                 url: analysisData.researchmap_url || '',
                 query: analysisData.query || '',
                 analysis_score: analysisData.relevance_score,
-                has_analysis: true
+                has_analysis: !!analysisData.analysis_result
             };
             selectedProjectId = null;
             document.getElementById('project-select-modal').style.display = 'block';

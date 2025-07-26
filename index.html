@@ -623,7 +623,7 @@
                         </div>
                         
                         <div class="checkbox-group">
-                            <input type="checkbox" id="young-researcher-filter">
+                            <input type="checkbox" id="young-researcher-filter" onchange="displayAPISearchResults()">
                             <label for="young-researcher-filter">🌟 若手研究者のみ表示</label>
                         </div>
 
@@ -857,15 +857,16 @@
          * @returns {{label: string, color: string}} - 関連度のラベルと色を含むオブジェクト
          */
         function classifyRelevanceByDistance(distance) {
-            // しきい値は検索結果を見ながら調整するのがおすすめです
-            if (distance < 0.3) {
-                return { label: '高', color: '#28a745' }; // 緑色
-            } else if (distance < 0.4) {
-                return { label: '中', color: '#ffc107' }; // 黄色
-            } else {
-                return { label: '低', color: '#6c757d' }; // グレー
-            }
-        }
+             if (distance < 0.3) {
+                 return { label: '高', color: '#28a745' };
+             } else if (distance < 0.4) {
+                 return { label: '中', color: '#ffc107' };
+             } else if (distance < 0.45) {
+                 return { label: '低', color: '#fd7e14' }; // オレンジ
+             } else {
+                 return { label: '極低', color: '#6c757d' }; // グレー
+             }
+         }
 
         // 検索方法変更時の処理
         window.onSearchMethodChange = function() {
@@ -1129,113 +1130,107 @@ function normalizeUniversityName(name) {
     
     return null; // 有効な大学名でない場合はnullを返す
 }        
-        // API検索結果の表示関数 (大学名正規化対応版)
-window.displayAPISearchResults = function(apiResponse) {
+        
+// API検索結果の表示関数 (クライアントサイドフィルタリング、エラー修正版)
+window.displayAPISearchResults = function(apiResponse = null) {
     const resultsContainer = document.getElementById('api-search-results');
-    const savedUrlToIdMap = getSavedUrlToIdMap();
-    // プロジェクトに追加済みの研究者情報をマップ化する
-    const addedResearchersMap = new Map();
-    try {
-        const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
-        tempProjects.forEach(project => {
-            if (project.selected_researchers) {
-                project.selected_researchers.forEach(researcher => {
-                    // researchmap_url をキーにプロジェクト名を保存
-                    if (researcher.url) {
-                        addedResearchersMap.set(researcher.url, project.name);
-                    }
-                });
-            }
-        });
-    } catch (e) {
-        console.error("プロジェクトデータの読み込みに失敗しました:", e);
-    }
-    // fullSearchResultsから大学ごとの研究者数を集計します
-    const universityCounts = fullSearchResults.reduce((acc, researcher) => {
-        const uniName = normalizeUniversityName(researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en);
-        if (uniName) {
-            acc[uniName] = (acc[uniName] || 0) + 1;
-        }
-        return acc;
-    }, {});
-    if (fullSearchResults && fullSearchResults.length > 0) {
-        const uniqueUniversities = new Set(
-            fullSearchResults.map(r => {
-                // 生の所属名を正規化関数にかける
-                return normalizeUniversityName(r.main_affiliation_name_ja || r.main_affiliation_name_en);
-            }).filter(Boolean) // nullになったものを除外
-        );
-        window.selectedUniversities = Array.from(uniqueUniversities);
-        displayUniversityList(); 
-    }
-    let resultsToDisplay = fullSearchResults;
-    // activeUniversityFiltersに大学が選択されていれば、表示結果を絞り込む
+    
+    // --- クエリの特定 ---
+    // apiResponseがあればそこから、なければ入力ボックスから取得
+    const currentQuery = apiResponse ? apiResponse.query : document.getElementById('api-search-input').value.trim();
+
+    // --- フィルタリングロジック ---
+    let resultsToDisplay = [...fullSearchResults]; 
+
+    // 1. 大学フィルター
     if (activeUniversityFilters.length > 0) {
-        resultsToDisplay = fullSearchResults.filter(researcher => {
+        resultsToDisplay = resultsToDisplay.filter(researcher => {
             const uniName = normalizeUniversityName(researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en);
             return uniName && activeUniversityFilters.includes(uniName);
         });
     }
-    // (以降のコードは変更なし)
+
+    // 2. 若手研究者フィルター
+    const youngFilterActive = document.getElementById('young-researcher-filter').checked;
+    if (youngFilterActive) {
+        resultsToDisplay = resultsToDisplay.filter(researcher => researcher.is_young_researcher);
+    }
+    
+    // --- ページネーションと表示 ---
     const totalResults = resultsToDisplay.length;
-    const totalPages = Math.ceil(totalResults / resultsPerPage);
+    const totalPages = Math.ceil(totalResults / resultsPerPage) || 1;
+    currentPage = Math.min(currentPage, totalPages);
     const startIndex = (currentPage - 1) * resultsPerPage;
     const endIndex = startIndex + resultsPerPage;
-    const paginatedResults = resultsToDisplay.slice(startIndex, endIndex); // 変更
+    const paginatedResults = resultsToDisplay.slice(startIndex, endIndex);
 
     let html = '';
 
-if (window.selectedUniversities && window.selectedUniversities.length > 0) {
-    // 研究者数で大学リストを降順にソート
-    const sortedUniversities = [...window.selectedUniversities].sort((a, b) => {
-        return (universityCounts[b] || 0) - (universityCounts[a] || 0);
-    });
-
-    html += `
-        <div class="alert alert-info" style="margin-bottom: 20px; border-left: 4px solid #667eea;">
-            <h5 style="font-size: 16px; color: #2c3e50; margin-bottom: 10px;">🏫 大学別絞り込み (クリックで選択 / Ctrl+クリックで複数選択)</h5>
-            <div style="margin-bottom: 10px;">
-                ${sortedUniversities.map(univ => {
-                    // フィルターが選択されていない、または現在の大学が含まれている場合は選択状態
-                    const isSelected = activeUniversityFilters.length === 0 || activeUniversityFilters.includes(univ);
-                    const univNameEscaped = univ.replace(/'/g, "\\'"); // シングルクォートをエスケープ
-                    
-                    return `<span class="filter-active-badge"
-                                  onclick="toggleActiveUniversityFilter('${univNameEscaped}', event)"
-                                  style="cursor: pointer; transition: all 0.2s; border-width: 2px; ${isSelected ? 'opacity: 1; border-style: solid; font-weight: bold;' : 'opacity: 0.5; border-style: dashed;'}">
-                                  ${univ} (${universityCounts[univ] || 0}名)
-                            </span>`;
-                }).join('')}
+    // 大学別絞り込みUIの再描画
+    const universityCounts = fullSearchResults.reduce((acc, researcher) => {
+        const uniName = normalizeUniversityName(researcher.main_affiliation_name_ja || researcher.main_affiliation_name_en);
+        if (uniName) acc[uniName] = (acc[uniName] || 0) + 1;
+        return acc;
+    }, {});
+    const uniqueUniversities = new Set(fullSearchResults.map(r => normalizeUniversityName(r.main_affiliation_name_ja || r.main_affiliation_name_en)).filter(Boolean));
+    
+    if (uniqueUniversities.size > 0) {
+        const sortedUniversities = [...uniqueUniversities].sort((a, b) => (universityCounts[b] || 0) - (universityCounts[a] || 0));
+        html += `
+            <div class="alert alert-info" style="margin-bottom: 20px; border-left: 4px solid #667eea;">
+                <h5 style="font-size: 16px; color: #2c3e50; margin-bottom: 10px;">🏫 大学別絞り込み</h5>
+                <div>
+                    ${sortedUniversities.map(univ => {
+                        const isSelected = activeUniversityFilters.includes(univ);
+                        const univNameEscaped = univ.replace(/'/g, "\\'");
+						const shouldShowBold = activeUniversityFilters.length === 0 || isSelected;
+                        return `<span class="filter-active-badge" onclick="toggleActiveUniversityFilter('${univNameEscaped}', event)"
+                                      style="cursor: pointer; transition: all 0.2s; border-width: 2px; ${shouldShowBold ? 'opacity: 1; border-style: solid; font-weight: bold;' : 'opacity: 0.5; border-style: dashed;'} ">
+                                      ${univ} (${universityCounts[univ] || 0}名)
+                                </span>`;
+                    }).join('')}
+                </div>
+                ${activeUniversityFilters.length > 0 ? `<button class="btn btn-secondary" onclick="resetActiveUniversityFilter()" style="font-size:12px; padding: 4px 10px; margin-top: 10px;">全大学の表示に戻す</button>` : ''}
             </div>
-            ${activeUniversityFilters.length > 0 ? `<button class="btn btn-secondary" onclick="resetActiveUniversityFilter()" style="font-size:12px; padding: 4px 10px;">全大学の表示に戻す</button>` : ''}
-        </div>
-    `;
-}
+        `;
+    }
 
     if (totalResults === 0) {
-        html += `<div class="alert alert-info">「${apiResponse.query}」に該当する研究者は見つかりませんでした。</div>`;
+        html += `<div class="alert alert-info">「${currentQuery}」に該当する研究者は見つかりませんでした。</div>`;
         resultsContainer.innerHTML = html;
         return;
     }
     
     html += `
         <div class="alert alert-success">
-            「${apiResponse.query}」の検索結果: ${totalResults}件見つかりました。
+            「${currentQuery}」の検索結果: ${totalResults}件見つかりました。
             ( ${currentPage} / ${totalPages} ページ目を表示中 )
         </div>
     `;
 
-    if (apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
-        const expandedKeywords = apiResponse.expanded_info.expanded_keywords;
+    if (apiResponse && apiResponse.expanded_info && apiResponse.expanded_info.expanded_keywords) {
         html += `
             <div class="expanded-keywords">
                 <strong>🧠 AIによるキーワード拡張:</strong><br>
                 <div style="margin-top: 8px;">
-                    ${expandedKeywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                    ${apiResponse.expanded_info.expanded_keywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
                 </div>
             </div>
         `;
     }
+
+    const savedUrlToIdMap = getSavedUrlToIdMap();
+    const addedResearchersMap = new Map();
+     try {
+        const tempProjects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+        tempProjects.forEach(project => {
+            if (project.selected_researchers) {
+                project.selected_researchers.forEach(researcher => {
+                    if (researcher.url) addedResearchersMap.set(researcher.url, project.name);
+                });
+            }
+        });
+    } catch (e) { console.error("プロジェクトデータの読み込みに失敗しました:", e); }
 
     paginatedResults.forEach(researcher => {
         const name = researcher.name_ja || researcher.name_en || '名前不明';
@@ -1249,50 +1244,30 @@ if (window.selectedUniversities && window.selectedUniversities.length > 0) {
         const researcherId = (researchmapUrl.split('/').pop() || (name + affiliation)).replace(/[^a-zA-Z0-9]/g, '');
         const isYoungResearcher = researcher.is_young_researcher;
         const youngReasons = researcher.young_researcher_reasons || [];
-        // 「追加済」ラベル用のHTMLを準備
-        const addedProjectName = addedResearchersMap.get(researchmapUrl);
-        let addedProjectLabelHtml = '';
-        if (addedProjectName) {
-            addedProjectLabelHtml = `
-                <div class="project-added-label" style="background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; border-radius: 6px; text-align: center; font-weight: 600; font-size: 14px; margin-top: 15px;">
-                    ✅「${addedProjectName}」に追加済です
-                </div>
-            `;
-    }
+        
         let relevanceBadgeHtml = '';
-        let distanceText = '';
-        // セマンティック検索かつdistanceフィールドが存在する場合に関連度バッジを生成
         if (researcher.distance !== null && researcher.distance !== undefined) {
             const relevance = classifyRelevanceByDistance(researcher.distance);
-            relevanceBadgeHtml = `
-                <span style="display: inline-block; background-color: ${relevance.color}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-left: 10px;">
-                    関連度: ${relevance.label}
-                </span>`;
-            distanceText = ` (距離: ${researcher.distance.toFixed(4)})`;
+            relevanceBadgeHtml = `<span style="display: inline-block; background-color: ${relevance.color}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-left: 10px;">関連度: ${relevance.label} (距離: ${researcher.distance.toFixed(3)})</span>`;
         }
+        
         const analysisId = savedUrlToIdMap.get(researchmapUrl);
-        
         const analysisButtonHtml = analysisId
-            // 保存済みの場合：「保存した分析結果」ボタンを表示
             ? `<a href="researcher-analysis.html?id=${analysisId}" class="btn btn-secondary" style="background-color: #d4edda; border-color: #155724; color: #155724;">📂 保存した分析結果</a>`
-            // onclickに関数引数として researcherId を追加し、data-action属性を追加
-            : `<button class="btn btn-primary" data-action="analyze" onclick="analyzeResearcherDetail('${researcherId}', '${researchmapUrl}', '${apiResponse.query}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>`;           
+            : `<button class="btn btn-primary" data-action="analyze" onclick="analyzeResearcherDetail('${researcherId}', '${researchmapUrl}', '${currentQuery}', ${JSON.stringify({name: name, affiliation: affiliation}).replace(/"/g, '&quot;')})">🔍 AI詳細分析</button>`;
         
-        // --- ▼▼▼ ここから修正 ▼▼▼ ---
-        // JSON.stringifyでresearcherオブジェクト全体を文字列として渡す。
-        // HTML属性内でシングルクォートが使われているため、JSON内のシングルクォートは &apos; にエスケープする
         const researcherJsonString = JSON.stringify(researcher).replace(/'/g, "&apos;");
 
         html += `
             <div class="researcher-card" id="card-${researcherId}">
                 <div class="researcher-name">
-                     ${name} (${affiliation})${distanceText}${relevanceBadgeHtml}
+                     ${name} (${affiliation})${relevanceBadgeHtml}
                     ${isYoungResearcher ? '<span class="young-researcher-badge">🌟 若手研究者</span>' : ''}
                 </div>
                 
                 ${keywords !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究キーワード:</span> ${keywords}</div>` : ''}
                 ${fields !== 'N/A' ? `<div class="researcher-info"><span class="info-label">研究分野:</span> ${fields}</div>` : ''}
-                ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.length > 200 ? profile.substring(0, 200) + '...' : profile}</div>` : ''}
+                ${profile !== 'N/A' ? `<div class="researcher-info"><span class="info-label">プロフィール:</span> ${profile.substring(0, 200)}${profile.length > 200 ? '...' : ''}</div>` : ''}
                 ${paper !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要論文:</span> ${paper}</div>` : ''}
                 ${project !== 'N/A' ? `<div class="researcher-info"><span class="info-label">主要プロジェクト:</span> ${project}</div>` : ''}
                 
@@ -1304,21 +1279,15 @@ if (window.selectedUniversities && window.selectedUniversities.length > 0) {
 
                 <div id="summary-container-${researcherId}" class="ai-summary" style="display: none; margin-top: 15px;"></div>
                 
-                ${addedProjectLabelHtml}
-                
                 <div class="button-group">
-                    <button class="btn btn-secondary" onclick='generateSingleSummary(this, ${researcherJsonString})'>🤖 AI要約を生成</button>
-                    
-                    ${analysisButtonHtml} 
-                    
-                   <button class="btn btn-primary" onclick="addToProjectCandidates('${researcherId}', '${name}', '${affiliation}', '${researchmapUrl}')">プロジェクト候補に追加</button>
-                    
+                    <button class="btn btn-secondary" onclick='generateSingleSummary(this, ${researcherJsonString})'>🤖 AI要約</button>
+                    ${analysisButtonHtml}
+                    <button class="btn btn-primary" onclick="addToProjectCandidates('${researcherId}', '${name}', '${affiliation}', '${researchmapUrl}')">候補に追加</button>
                     ${researchmapUrl !== '#' ? `<a href="${researchmapUrl}" target="_blank" class="btn btn-secondary">ResearchMap</a>` : ''}
                 </div>
             </div>
         `;
     });
-    // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
     if (totalPages > 1) {
         html += '<div class="pagination">';
@@ -1327,19 +1296,19 @@ if (window.selectedUniversities && window.selectedUniversities.length > 0) {
             html += `<button onclick="changePage(${i})" class="${currentPage === i ? 'active' : ''}">${i}</button>`;
         }
         html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>次へ &raquo;</button>`;
-        html += '<\/div>';
+        html += '</div>';
     }
 
     resultsContainer.innerHTML = html;
 };
+
 /**
  * ページを切り替えるための関数
  * @param {number} page - 表示したいページ番号
  */
 window.changePage = function(page) {
     currentPage = page;
-    // apiResponseは検索クエリさえあればOK
-    displayAPISearchResults({ query: document.getElementById('api-search-input').value.trim() }); 
+    displayAPISearchResults(); 
     document.getElementById('api-search-results').scrollIntoView({ behavior: 'smooth' });
 };
 
@@ -1491,7 +1460,7 @@ window.performAPISearch = async function() {
             excludeKeywords: excludeKeywordsList,
             useLlmExpansion: useLLMExpansion,
             useInternalEvaluation: false,
-            youngResearcherFilter: youngResearcherFilter,
+            youngResearcherFilter: false, // バックエンドでは常に全件取得
             universityFilter: window.selectedUniversities.length > 0 ? window.selectedUniversities : null
         };
 
@@ -1500,7 +1469,7 @@ window.performAPISearch = async function() {
         fullSearchResults = apiResponse.results || [];
         currentPage = 1;
 
-        // 結果表示関数を呼び出す
+        // 結果表示関数を呼び出す（ここでクライアントサイドフィルタが適用される）
         displayAPISearchResults(apiResponse); 
         
     } catch (error) {
@@ -2415,6 +2384,7 @@ window.setExcludeKeyword = function(keyword) {
  * @param {Event} event クリックイベント
  */
 window.toggleActiveUniversityFilter = function(universityName, event) {
+    event = event || window.event || {};
     const isCtrlOrCmd = event.ctrlKey || event.metaKey; // Ctrl(Win) or Cmd(Mac)
 
     if (isCtrlOrCmd) {
