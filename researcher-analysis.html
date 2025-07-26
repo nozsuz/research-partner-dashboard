@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>研究者詳細分析</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.7/build/d3.layout.cloud.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            display: flex; /* サイドバーとメインコンテンツを横並びに */
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .info-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .info-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #0c5460;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #155724;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #856404;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #721c24;
+            color: #721c24;
+        }
+        
+        #analysis-result-container {
+            display: none;
+        }
+        
+        #analysis-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        #analysis-content h3 {
+            color: #2c3e50;
+            margin: 20px 0 15px 0;
+            font-size: 18px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        #analysis-content ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        #analysis-content p {
+            margin-bottom: 15px;
+        }
+        
+        .analysis-actions {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .saved-analyses-section {
+            margin-top: 40px;
+        }
+        
+        .saved-analyses-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        .saved-analysis-item {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .saved-analysis-item h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .saved-analysis-item p {
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 15px;
+        }
+
+        .analysis-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            min-width: 250px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            position: relative; /* For positioning the close button */
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px 40px; /* Increased padding */
+            border: 1px solid #888;
+            width: 95%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: #aaa;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+        }
+        
+        .project-select-item {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .project-select-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .project-select-item.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        }
+        
+        .project-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .project-description {
+            color: #495057;
+            line-height: 1.5;
+        }
+        
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
+            color: #2c3e50;
+            margin: 20px 0 10px 0;
+            font-weight: 600;
+        }
+        
+        .markdown-content h1 { font-size: 24px; }
+        .markdown-content h2 { font-size: 20px; }
+        .markdown-content h3 { font-size: 18px; }
+        .markdown-content h4 { font-size: 16px; }
+        .markdown-content h5 { font-size: 14px; }
+        .markdown-content h6 { font-size: 12px; }
+        
+        .markdown-content p {
+            margin: 10px 0;
+            line-height: 1.7;
+        }
+        
+        .markdown-content ul,
+        .markdown-content ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        .markdown-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .markdown-content code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .markdown-content strong {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .markdown-content em {
+            font-style: italic;
+            color: #495057;
+        }
+        
+        .markdown-content hr {
+            margin: 25px 0;
+            border: none;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .markdown-content a {
+            color: #667eea;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-bottom-color 0.3s ease;
+        }
+        
+        .markdown-content a:hover {
+            border-bottom-color: #667eea;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar h1 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .menu-item {
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+
+        .menu-item.active {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .map-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .map-search {
+            display: flex;
+            gap: 8px;
+        }
+
+        #keyword-search-input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            min-width: 250px;
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h1>🤝 リサーチパートナー</h1>
+        <hr style="border-color: rgba(255,255,255,0.3); margin: 20px 0;">
+        
+        <a href="index.html" class="menu-item">
+            🔍 研究者検索
+        </a>
+        <a href="researcher-analysis.html" class="menu-item">
+            📂 保存済み分析
+        </a>
+        <a href="project.html" class="menu-item">
+            📊 マイプロジェクト
+        </a>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="header">
+                <h1>🔬 保存済み分析</h1>
+                <p>保存した分析結果の閲覧、再分析、プロジェクトへの追加ができます</p>
+            </div>
+            
+            <div class="info-section">
+                <h2>分析設定</h2>
+                <div class="form-group">
+                    <label>研究者名</label>
+                    <input type="text" id="researcher-name" class="form-control" placeholder="例: 山田 太郎" value="">
+                </div>
+                
+                <div class="form-group">
+                    <label>ResearchMap URL</label>
+                    <input type="text" id="researchmap-url" class="form-control" placeholder="https://researchmap.jp/xxxxx" value="">
+                </div>
+                
+                <div class="form-group">
+                    <label>分析クエリ（どんな観点で分析するか）</label>
+                    <input type="text" id="analysis-query" class="form-control" placeholder="例: AI材料探索、機械学習、ナノテクノロジー" value="">
+                </div>
+                
+                <button class="btn btn-primary" onclick="startAnalysis()">
+                    🤖 AI分析を開始
+                </button>
+            </div>
+            
+            <div id="analysis-result-container">
+                <div class="info-section">
+                    <h2>分析結果</h2>
+                    <div id="analysis-content">
+                        </div>
+                </div>
+                
+                <div class="analysis-actions">
+                    <button id="save-analysis-btn" class="btn btn-primary" onclick="saveCurrentAnalysis()">
+                        💾 この分析結果を保存
+                    </button>
+                    <button id="add-current-to-project-btn" class="btn btn-primary" onclick="addCurrentAnalysisToProject()" style="display: none;">
+                        ➕ プロジェクトに追加
+                    </button>
+                    <button id="show-keyword-map-btn" class="btn btn-secondary" onclick="showKeywordAnalysis()" style="display: none;">
+                        📊 キーワード分析
+                    </button>
+                    <span id="save-status"></span>
+                </div>
+            </div>
+            
+            <div class="saved-analyses-section">
+                <h3>📂 保存済みの分析結果</h3>
+                <div id="saved-analyses-list">
+                    <p>読み込み中...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="analysisModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>分析結果詳細</h2>
+                <div id="modal-analysis-content"></div>
+            </div>
+        </div>
+    
+        <div id="project-select-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeProjectSelectModal()">&times;</span>
+                <h2>研究者を追加するプロジェクトを選択</h2>
+                
+                <div style="
+                    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                    color: white;
+                    text-align: center;
+                    padding: 20px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    margin-bottom: 20px;
+                    transition: all 0.3s ease;
+                " onclick="createNewProjectFromModal()">
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 5px;">
+                        ➕ 新しいプロジェクトを作成
+                    </div>
+                    <div style="font-size: 14px; opacity: 0.9;">
+                        新しい仮プロジェクトを作成して研究者を追加
+                    </div>
+                </div>
+                
+                <div id="project-list-container">
+                    </div>
+                
+                <div style="
+                    margin-top: 25px;
+                    padding-top: 20px;
+                    border-top: 2px solid #e9ecef;
+                    display: flex;
+                    gap: 15px;
+                    justify-content: flex-end;
+                ">
+                    <button class="btn btn-secondary" onclick="closeProjectSelectModal()">
+                        キャンセル
+                    </button>
+                    <button id="add-to-project-btn" class="btn btn-primary" onclick="addResearcherToSelectedProject()" disabled>
+                        選択したプロジェクトに追加
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="keyword-map-modal" class="modal">
+        <div class="modal-content" style="max-width: 1400px; width: 95%; height: 90vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>キーワード分析</h2>
+                <span class="close" onclick="closeKeywordMapModal()">&times;</span>
+            </div>
+            <p>研究者の研究領域や傾向を分かりやすく可視化します。</p>
+            
+            <div style="display: flex; flex: 1; gap: 20px; margin-top: 20px; overflow: hidden;">
+                <!-- Left Column -->
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+                    <!-- Top-Left: Word Cloud -->
+                    <div style="flex: 1; display: flex; flex-direction: column; background: #f8f9fa; border-radius: 8px; padding: 15px; min-height: 0;">
+                        <h3>ワードクラウド</h3>
+                        <div id="word-cloud-container" style="flex-grow: 1; width: 100%; height: 100%;"></div>
+                    </div>
+                    <!-- Bottom-Left: Academic Fields -->
+                    <div style="flex: 1; display: flex; flex-direction: column; background: #f8f9fa; border-radius: 8px; padding: 15px; overflow-y: auto; min-height: 0;">
+                        <h3>主要な学問領域</h3>
+                        <div id="academic-fields-container"></div>
+                    </div>
+                </div>
+                <!-- Right Column -->
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+                    <!-- Top-Right: Research Trends -->
+                    <div style="flex: 1; display: flex; flex-direction: column; background: #f8f9fa; border-radius: 8px; padding: 15px; min-height: 0;">
+                        <h3>研究トレンド</h3>
+                        <div id="trend-chart-container" style="flex-grow: 1; width: 100%; min-height: 200px;"></div>
+                    </div>
+                    <!-- Bottom-Right: AI Comment -->
+                    <div style="flex: 1; display: flex; flex-direction: column; background: #f8f9fa; border-radius: 8px; padding: 15px; overflow-y: auto; min-height: 0;">
+                        <h3>AIによるコメント</h3>
+                        <div id="keyword-llm-comment" style="flex-grow: 1; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="api-client.js"></script>
+    <script>
+        // グローバル変数
+        let currentAnalysisData = null;
+        let currentResearcher = null;
+        let selectedProjectId = null;
+        let isWordCloudScriptLoaded = false;
+        
+        // DOM読み込み完了時の処理
+        document.addEventListener('DOMContentLoaded', function() {
+            activateCurrentMenuItem();
+            initializeFromUrlParams();
+            loadSavedAnalyses();
+            setupModalCloseButtons();
+        });
+
+        // サイドバーの現在地をアクティブにする
+        function activateCurrentMenuItem() {
+            const currentPage = window.location.pathname.split('/').pop();
+            document.querySelectorAll('.sidebar .menu-item').forEach(item => {
+                item.classList.toggle('active', currentPage.includes(item.getAttribute('href')));
+            });
+        }
+
+        // URLパラメータから初期値を設定・表示
+        function initializeFromUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const analysisId = urlParams.get('id');
+            
+            document.getElementById('researcher-name').value = urlParams.get('name') || '';
+            document.getElementById('researchmap-url').value = urlParams.get('url') || '';
+            document.getElementById('analysis-query').value = urlParams.get('query') || '';
+            
+            if (analysisId) {
+                viewSavedAnalysisFromUrl(analysisId);
+            }
+        }
+
+        // 全てのモーダルの閉じるボタンにイベントを設定
+        function setupModalCloseButtons() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                const closeBtn = modal.querySelector('.close');
+                if (closeBtn) {
+                    closeBtn.onclick = () => modal.style.display = 'none';
+                }
+                window.addEventListener('click', (event) => {
+                    if (event.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // URLから特定の保存済み分析を表示
+        async function viewSavedAnalysisFromUrl(analysisId) {
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+            if (!analysis) {
+                alert('指定された分析結果が見つかりません');
+                return;
+            }
+            
+            currentAnalysisData = { ...analysis }; // 元のデータをコピーして保持
+            document.getElementById('researcher-name').value = analysis.researcher_name || '';
+            document.getElementById('researchmap-url').value = analysis.researchmap_url || '';
+            document.getElementById('analysis-query').value = analysis.query || '';
+
+            if (analysis.analysis_result) {
+                document.getElementById('analysis-result-container').style.display = 'block';
+                displayAnalysisResult(analysis.analysis_result);
+                document.getElementById('add-current-to-project-btn').style.display = 'inline-block';
+                const saveBtn = document.getElementById('save-analysis-btn');
+                saveBtn.textContent = '✅ 保存済み';
+                saveBtn.disabled = true;
+            }
+        }
+
+        // AI分析を開始
+        async function startAnalysis() {
+            const researcherName = document.getElementById('researcher-name').value.trim();
+            const researchmapUrl = document.getElementById('researchmap-url').value.trim();
+            const query = document.getElementById('analysis-query').value.trim();
+            
+            if (!researcherName || !researchmapUrl || !query) {
+                alert('すべての項目を入力してください');
+                return;
+            }
+            
+            const resultContainer = document.getElementById('analysis-result-container');
+            const contentDiv = document.getElementById('analysis-content');
+            resultContainer.style.display = 'block';
+            contentDiv.innerHTML = `<div class="loading"><div class="spinner"></div>AI分析を実行中...</div>`;
+            
+            try {
+                const result = await apiClient.analyzeResearcher(researchmapUrl, query, { name_ja: researcherName }, true);
+                console.log('Analysis result:', result); // Add this line for debugging
+                if (result.status !== 'success' || !result.analysis) {
+                    throw new Error(result.error || '不明なエラー');
+                }
+                
+                displayAnalysisResult(result.analysis);
+                currentAnalysisData = {
+                    researchmap_url: researchmapUrl,
+                    researcher_name: researcherName,
+                    query: query,
+                    analysis_result: result.analysis,
+                    affiliation: result.analysis.affiliation || '不明',
+                    relevance_score: result.analysis.scores?.total || null
+                };
+                document.getElementById('save-analysis-btn').disabled = false;
+                document.getElementById('add-current-to-project-btn').style.display = 'inline-block';
+            } catch (error) {
+                console.error('分析エラー:', error);
+                contentDiv.innerHTML = `<div class="alert alert-danger">エラーが発生しました: ${error.message}</div>`;
+            }
+        }
+
+        // 分析結果のHTMLを生成
+        function generateAnalysisHtml(analysis, canvasId) {
+            if (!analysis) return '<div class="alert alert-info">分析データがありません。</div>';
+
+            const {
+                researcher_name, affiliation, scores, total_papers, total_projects,
+                total_awards, total_patents, detailed_analysis,
+                top_papers = [], key_projects = [], key_patents = []
+            } = analysis;
+
+            let html = '';
+            if (researcher_name) html += `<h3>研究者情報</h3><div class="info-item"><span class="info-label">氏名:</span> ${researcher_name}</div><div class="info-item"><span class="info-label">所属:</span> ${affiliation || 'N/A'}</div>`;
+            if (scores) html += `<h3>評価スコア</h3><div class="info-item"><span class="info-label">総合評価:</span> ${scores.total || 0}/100</div><div class="info-item"><span class="info-label">技術的関連性:</span> ${scores.technical_relevance || 0}/40</div><div class="info-item"><span class="info-label">実績・影響力:</span> ${scores.achievements || 0}/30</div><div class="info-item"><span class="info-label">実用化可能性:</span> ${scores.practical_applicability || 0}/30</div><div style="margin-top: 20px; max-width: 450px; margin-left: auto; margin-right: auto;"><canvas id="${canvasId}"></canvas></div>`;
+            if (total_papers !== undefined) html += `<h3>研究実績</h3><div class="info-item"><span class="info-label">論文数:</span> ${total_papers || 0}件</div><div class="info-item"><span class="info-label">プロジェクト数:</span> ${total_projects || 0}件</div><div class="info-item"><span class="info-label">受賞歴:</span> ${total_awards || 0}件</div><div class="info-item"><span class="info-label">特許:</span> ${total_patents || 0}件</div>`;
+            if (detailed_analysis) html += `<h3>AI分析結果</h3><div class="markdown-content" style="line-height: 1.8; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">${convertMarkdownToHtml(detailed_analysis)}</div>`;
+            if (top_papers.length > 0) html += `<h3>主要論文</h3><ul style="margin: 10px 0; padding-left: 25px;">${top_papers.map(p => `<li style="margin-bottom: 8px;"><strong>[${p.year}]</strong> ${p.title_ja || p.title_en}${p.journal ? ` - ${p.journal}` : ''}</li>`).join('')}</ul>`;
+            if (key_projects.length > 0) html += `<h3>主要プロジェクト</h3><ul style="margin: 10px 0; padding-left: 25px;">${key_projects.map(p => `<li style="margin-bottom: 8px;">${p.title} (${p.period})</li>`).join('')}</ul>`;
+            if (key_patents.length > 0) html += `<h3>主要特許</h3><ul style="margin: 10px 0; padding-left: 25px;">${key_patents.map(p => `<li style="margin-bottom: 12px;"><strong>${p.title}</strong><br>出願番号: ${p.application_number || '不明'} / 特許番号: ${p.patent_number || '（審査中）'}</li>`).join('')}</ul>`;
+            
+            return html;
+        }
+
+        // レーダーチャートを描画
+        function drawRadarChart(canvasId, scores, researcherName) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !scores) return;
+            const ctx = canvas.getContext('2d');
+
+            if (canvas.chart) canvas.chart.destroy();
+
+            canvas.chart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['技術的関連性', '実績・影響力', '実用化可能性'],
+                    datasets: [{
+                        label: `${researcherName} 氏の評価`,
+                        data: [scores.technical_relevance || 0, scores.achievements || 0, scores.practical_applicability || 0],
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(102, 126, 234, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: { r: { max: 40, min: 0, ticks: { stepSize: 10 }, pointLabels: { font: { size: 14 } } } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        // 分析結果をメインエリアに表示
+        function displayAnalysisResult(analysis) {
+            const contentDiv = document.getElementById('analysis-content');
+            contentDiv.innerHTML = generateAnalysisHtml(analysis, 'radarChartCanvas');
+            
+            setTimeout(() => drawRadarChart('radarChartCanvas', analysis.scores, analysis.researcher_name), 0);
+
+            const keywordMapBtn = document.getElementById('show-keyword-map-btn');
+            const hasKeywordData = analysis?.keyword_analysis && (analysis.keyword_analysis.word_cloud?.length > 0 || analysis.keyword_analysis.research_trends && Object.keys(analysis.keyword_analysis.research_trends).length > 0);
+            keywordMapBtn.style.display = hasKeywordData ? 'inline-block' : 'none';
+        }
+        
+        // マークダウンをHTMLに変換
+        function convertMarkdownToHtml(text) {
+            if (!text) return '';
+            return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        }
+
+        // 現在の分析を保存
+        async function saveCurrentAnalysis() {
+            if (!currentAnalysisData) {
+                alert('保存する分析結果がありません');
+                return;
+            }
+            
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            
+            // 既存の分析IDがあるか確認
+            const existingIndex = savedAnalyses.findIndex(a => a.analysis_id === currentAnalysisData.analysis_id);
+
+            if (existingIndex !== -1) {
+                // 既存の分析を更新（created_atは変更しない）
+                savedAnalyses[existingIndex] = {
+                    ...savedAnalyses[existingIndex], // 既存のデータを展開
+                    ...currentAnalysisData, // 新しいデータで上書き
+                };
+            } else {
+                // 新しい分析として保存
+                const analysisData = { 
+                    ...currentAnalysisData, 
+                    analysis_id: `analysis_${Date.now()}`, 
+                    created_at: new Date().toISOString() 
+                };
+                savedAnalyses.push(analysisData);
+            }
+
+            localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+            
+            const saveBtn = document.getElementById('save-analysis-btn');
+            saveBtn.textContent = '✅ 保存しました';
+            saveBtn.disabled = true;
+            await loadSavedAnalyses();
+        }
+
+        // 保存済み分析一覧を読み込み・表示
+        async function loadSavedAnalyses() {
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const listEl = document.getElementById('saved-analyses-list');
+            if (savedAnalyses.length === 0) {
+                listEl.innerHTML = '<p>保存済みの分析結果はありません</p>';
+                return;
+            }
+            listEl.innerHTML = savedAnalyses.map(analysis => {
+                const hasDetails = !!analysis.analysis_result;
+                return `
+                    <div class="saved-analysis-item">
+                        <div class="analysis-header">
+                            <div>
+                                <h4>${analysis.researcher_name}</h4>
+                                <p>所属: ${analysis.affiliation || '不明'}</p>
+                                <p>検索クエリ: 「${analysis.query}」</p>
+                                <p>総合評価スコア: ${analysis.relevance_score != null ? analysis.relevance_score + '/100' : 'N/A'}</p>
+                                <p><b>保存日時: ${new Date(analysis.created_at).toLocaleString('ja-JP')}</b></p>
+                            </div>
+                            <div class="analysis-buttons">
+                                ${hasDetails ? `<button class="btn btn-secondary" onclick="showSavedKeywordAnalysis('${analysis.analysis_id}')">📊 キーワード分析</button>` : ''}
+                                <button class="btn btn-secondary" onclick="viewSavedAnalysis('${analysis.analysis_id}')">👁️ 詳細を見る</button>
+                                <button class="btn btn-primary" onclick="addAnalysisToProject('${analysis.analysis_id}')">➕ プロジェクトに追加</button>
+                                <button class="btn btn-secondary" onclick="deleteSavedAnalysis('${analysis.analysis_id}')">🗑️ 削除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 保存済み分析の詳細をモーダルで表示
+        async function viewSavedAnalysis(analysisId) {
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+            if (!analysis) return;
+
+            const modal = document.getElementById('analysisModal');
+            const modalContent = document.getElementById('modal-analysis-content');
+            
+            const basicInfoHtml = `<div class="info-item"><span class="info-label">研究者名:</span> ${analysis.researcher_name}</div><div class="info-item"><span class="info-label">所属:</span> ${analysis.affiliation || 'N/A'}</div><div class="info-item"><span class="info-label">ResearchMap URL:</span> <a href="${analysis.researchmap_url}" target="_blank">${analysis.researchmap_url}</a></div><div class="info-item"><span class="info-label">検索クエリ:</span> ${analysis.query}</div><hr style="margin: 20px 0;">`;
+            const analysisHtml = generateAnalysisHtml(analysis.analysis_result, 'modalRadarChartCanvas');
+            
+            modalContent.innerHTML = basicInfoHtml + analysisHtml;
+            
+            setTimeout(() => drawRadarChart('modalRadarChartCanvas', analysis.analysis_result?.scores, analysis.analysis_result?.researcher_name), 100);
+            
+            modal.style.display = 'block';
+        }
+
+        // 保存済み分析を削除
+        async function deleteSavedAnalysis(analysisId) {
+            if (!confirm('この分析結果を削除してもよろしいですか？')) return;
+            let savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            savedAnalyses = savedAnalyses.filter(a => a.analysis_id !== analysisId);
+            localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+            await loadSavedAnalyses();
+        }
+
+        // プロジェクト追加フローの関数群
+        function addCurrentAnalysisToProject() {
+            if (currentAnalysisData) openProjectSelectModal(currentAnalysisData);
+        }
+        function addAnalysisToProject(analysisId) {
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+            if (analysis) openProjectSelectModal(analysis);
+        }
+        function openProjectSelectModal(analysisData) {
+            currentResearcher = {
+                name: analysisData.researcher_name,
+                affiliation: analysisData.affiliation || '不明',
+                url: analysisData.researchmap_url || '',
+                query: analysisData.query || '',
+                analysis_score: analysisData.relevance_score,
+                has_analysis: true
+            };
+            selectedProjectId = null;
+            document.getElementById('project-select-modal').style.display = 'block';
+            loadProjectList();
+            document.getElementById('add-to-project-btn').disabled = true;
+        }
+        function closeProjectSelectModal() {
+            document.getElementById('project-select-modal').style.display = 'none';
+        }
+        function loadProjectList() {
+            const projects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+            const container = document.getElementById('project-list-container');
+            if (projects.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #7f8c8d;"><p>仮プロジェクトがありません。</p></div>`;
+                return;
+            }
+            container.innerHTML = projects.map(p => `
+                <div class="project-select-item" onclick="selectProject('${p.id}')">
+                    <div class="project-name">${p.name}</div>
+                    <div class="project-meta">研究者: ${(p.selected_researchers || []).length}名</div>
+                    <div class="project-description">${p.description.substring(0, 100)}...</div>
+                </div>`).join('');
+        }
+        function selectProject(projectId) {
+            document.querySelectorAll('.project-select-item').forEach(item => item.classList.remove('selected'));
+            event.target.closest('.project-select-item').classList.add('selected');
+            selectedProjectId = projectId;
+            document.getElementById('add-to-project-btn').disabled = false;
+        }
+        function addResearcherToSelectedProject() {
+            if (!currentResearcher || !selectedProjectId) return;
+            const projects = JSON.parse(localStorage.getItem('tempProjects') || '[]');
+            const project = projects.find(p => p.id === selectedProjectId);
+            if (!project) return;
+            if (!project.selected_researchers) project.selected_researchers = [];
+            if (project.selected_researchers.some(r => r.name === currentResearcher.name)) {
+                alert('この研究者は既にプロジェクトに追加されています');
+                return;
+            }
+            project.selected_researchers.push({ ...currentResearcher, added_at: new Date().toISOString() });
+            localStorage.setItem('tempProjects', JSON.stringify(projects));
+            alert(`「${currentResearcher.name}」を「${project.name}」に追加しました`);
+            closeProjectSelectModal();
+        }
+        function createNewProjectFromModal() {
+            if (currentResearcher) sessionStorage.setItem('pendingResearcher', JSON.stringify(currentResearcher));
+            window.location.href = 'project-create.html';
+        }
+
+        // キーワード分析関連の関数
+        function showSavedKeywordAnalysis(analysisId) {
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+            if (analysis) {
+                currentAnalysisData = analysis;
+                showKeywordAnalysis();
+            }
+        }
+
+        function showKeywordAnalysis() {
+            const keywordData = currentAnalysisData?.analysis_result?.keyword_analysis;
+            
+            if (keywordData && (keywordData.word_cloud?.length > 0 || (keywordData.research_trends && Object.keys(keywordData.research_trends).length > 0))) {
+                const modal = document.getElementById('keyword-map-modal');
+                modal.style.display = 'block';
+                
+                document.getElementById('word-cloud-container').innerHTML = '';
+                document.getElementById('trend-chart-container').innerHTML = '';
+                document.getElementById('keyword-llm-comment').innerHTML = '';
+                document.getElementById('academic-fields-container').innerHTML = '';
+
+                const { academic_fields = [], word_cloud = [], research_trends = {}, llm_comment = '' } = keywordData;
+                
+                if (academic_fields.length > 0) {
+                    let fieldsHtml = '<ul>';
+                    academic_fields.forEach(field => {
+                        fieldsHtml += `<li><strong>${field.field}:</strong> ${field.description}</li>`;
+                    });
+                    fieldsHtml += '</ul>';
+                    document.getElementById('academic-fields-container').innerHTML = fieldsHtml;
+                } else {
+                    document.getElementById('academic-fields-container').innerHTML = '<p class="alert alert-info">学問領域のデータがありません。</p>';
+                }
+
+                if (word_cloud.length > 0) {
+                    drawWordCloud('word-cloud-container', word_cloud);
+                } else {
+                    document.getElementById('word-cloud-container').innerHTML = '<p class="alert alert-info">ワードクラウドのデータがありません。</p>';
+                }
+                
+                if (Object.keys(research_trends).length > 0) {
+                    drawResearchTrendChart('trend-chart-container', research_trends);
+                } else {
+                    document.getElementById('trend-chart-container').innerHTML = '<p class="alert alert-info">研究トレンドのデータがありません。</p>';
+                }
+
+                if (llm_comment) {
+                    document.getElementById('keyword-llm-comment').innerHTML = `<div class="markdown-content">${convertMarkdownToHtml(llm_comment)}</div>`;
+                } else {
+                    document.getElementById('keyword-llm-comment').innerHTML = '<p class="alert alert-info">AIコメントはありません。</p>';
+                }
+            } else {
+                if (confirm('キーワード分析データが見つかりません。再分析してデータを生成しますか？（APIへのリクエストが発生します）')) {
+                    regenerateKeywordAnalysis();
+                }
+            }
+        }
+
+        async function regenerateKeywordAnalysis() {
+            if (!currentAnalysisData || !currentAnalysisData.researchmap_url) {
+                alert('再分析に必要な情報がありません。');
+                return;
+            }
+
+            const modal = document.getElementById('keyword-map-modal');
+            modal.style.display = 'block';
+            const loadingHtml = `<div class="loading"><div class="spinner"></div>再分析中...</div>`;
+            document.getElementById('word-cloud-container').innerHTML = loadingHtml;
+            document.getElementById('trend-chart-container').innerHTML = loadingHtml;
+            document.getElementById('keyword-llm-comment').innerHTML = loadingHtml;
+
+            try {
+                const result = await apiClient.analyzeResearcher(
+                    currentAnalysisData.researchmap_url,
+                    currentAnalysisData.query,
+                    { name_ja: currentAnalysisData.researcher_name },
+                    true
+                );
+
+                if (result.status !== 'success' || !result.analysis) {
+                    throw new Error(result.error || '再分析に失敗しました');
+                }
+
+                currentAnalysisData.analysis_result = result.analysis;
+
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysisIndex = savedAnalyses.findIndex(a => a.analysis_id === currentAnalysisData.analysis_id);
+                if (analysisIndex !== -1) {
+                    savedAnalyses[analysisIndex] = currentAnalysisData;
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                }
+                
+                await loadSavedAnalyses();
+                showKeywordAnalysis();
+
+            } catch (error) {
+                alert(`エラーが発生しました: ${error.message}`);
+                closeKeywordMapModal();
+            }
+        }
+
+        function loadScript(src, callback) {
+            if (document.querySelector(`script[src="${src}"]`)) {
+                if (callback) callback();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            document.head.appendChild(script);
+        }
+
+        function closeKeywordMapModal() {
+            document.getElementById('keyword-map-modal').style.display = 'none';
+        }
+
+        function drawWordCloud(containerId, words) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+
+            const colors = ['#667eea', '#764ba2', '#f39c12', '#16a085', '#c0392b', '#2980b9', '#2c3e50'];
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const maxSize = Math.max(...words.map(w => w.size));
+            const fontScale = d3.scaleSqrt().domain([0, maxSize]).range([12, Math.min(width, height) / 5]);
+
+            const layout = d3.layout.cloud()
+                .size([width, height])
+                .words(words.map(d => ({text: d.text, size: fontScale(d.size)})))
+                .padding(5)
+                .rotate(() => (~~(Math.random() * 6) - 3) * 15)
+                .fontSize(d => d.size)
+                .on("end", draw);
+
+            layout.start();
+
+            function draw(words) {
+                d3.select(`#${containerId}`).append("svg")
+                    .attr("width", layout.size()[0])
+                    .attr("height", layout.size()[1])
+                    .append("g")
+                    .attr("transform", `translate(${layout.size()[0] / 2},${layout.size()[1] / 2})`)
+                    .selectAll("text")
+                    .data(words)
+                    .enter().append("text")
+                    .style("font-size", d => `${d.size}px`)
+                    .style("font-family", "Impact")
+                    .style("fill", (d, i) => colors[i % colors.length])
+                    .attr("text-anchor", "middle")
+                    .attr("transform", d => `translate(${[d.x, d.y]})rotate(${d.rotate})`)
+                    .text(d => d.text);
+            }
+        }
+
+        function drawResearchTrendChart(containerId, trends) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = ''; // Clear previous chart
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            const colors = ['#667eea', '#764ba2', '#f39c12', '#16a085', '#c0392b', '#2980b9', '#2c3e50'];
+
+            const datasets = Object.entries(trends).map(([field, yearData], index) => {
+                const color = colors[index % colors.length];
+                return {
+                    label: field,
+                    data: Object.entries(yearData).map(([year, value]) => ({ x: year, y: value })),
+                    borderColor: color,
+                    backgroundColor: color + '33',
+                    fill: false,
+                    tension: 0.3
+                };
+            });
+            
+            const allYears = [...new Set(datasets.flatMap(d => d.data.map(p => p.x)))].sort();
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allYears,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => `${(value * 100).toFixed(0)}%`
+                            },
+                            title: { display: true, text: '論文割合' }
+                        },
+                        x: {
+                            title: { display: true, text: '年' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: context => `${context.dataset.label}: ${(context.raw.y * 100).toFixed(1)}%`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

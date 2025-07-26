@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト詳細・進捗管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .project-id {
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .tab.active {
+            background: white;
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+        
+        .tab-content {
+            background: white;
+            padding: 30px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .info-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .metrics-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #45a049);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .metric {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .btn-full {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .activity-log {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        
+        .log-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        
+        .log-time {
+            color: #7f8c8d;
+            font-size: 12px;
+            min-width: 120px;
+        }
+        
+        .log-user {
+            font-weight: 600;
+            color: #495057;
+            min-width: 100px;
+        }
+        
+        .log-action {
+            flex: 1;
+            color: #2c3e50;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin: 20px 0;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-progress {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-pending {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .chat-message {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid #667eea;
+        }
+        
+        .chat-user {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .chat-time {
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+        
+        .chat-text {
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #0c5460;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #155724;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #856404;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #721c24;
+            color: #721c24;
+        }
+        
+        .gantt-placeholder {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 60px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e9ecef;
+            margin: 30px 0;
+        }
+        
+        .danger-zone {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .danger-zone h4 {
+            color: #c53030;
+            margin-bottom: 15px;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        .back-btn:hover {
+            background: #5a6268;
+            color: white;
+        }
+        
+        .edit-mode {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .edit-mode h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← マイプロジェクト一覧へ戻る</a>
+        
+        <div class="header">
+            <h1>📈 プロジェクト詳細: 次世代AI材料探索プロジェクト</h1>
+            <div class="project-id">プロジェクトID: P001</div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('overview')">📊 概要・進捗</div>
+            <div class="tab" onclick="showTab('tasks')">✅ タスク管理</div>
+            <div class="tab" onclick="showTab('documents')">📂 ドキュメント</div>
+            <div class="tab" onclick="showTab('communication')">💬 コミュニケーション</div>
+            <div class="tab" onclick="showTab('settings')">⚙️ 設定</div>
+        </div>
+        
+        <!-- 概要・進捗タブ -->
+        <div id="overview-tab" class="tab-content active">
+            <h2>プロジェクト概要</h2>
+            
+            <div class="overview-grid">
+                <div>
+                    <div class="info-section">
+                        <h3>基本情報</h3>
+                        <div id="view-mode">
+                            <div class="info-item">
+                                <span class="info-label">プロジェクト名:</span> 次世代AI材料探索プロジェクト
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">ステータス:</span> 進行中
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">プロジェクト説明:</span><br>
+                                AIを活用して、特定の特性を持つ新しい材料を効率的に探索・発見することを目的としたプロジェクト。持続可能な社会の実現に貢献する革新的な材料開発を目指す。主要なKPIは新規材料候補の発見数と、実験検証フェーズへの移行率。
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">開始日:</span> 2024年03月01日
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">目標完了日:</span> 2024年12月31日
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">予算:</span> 20,000,000 円
+                            </div>
+                        </div>
+                        
+                        <div id="edit-mode" class="edit-mode" style="display: none;">
+                            <h4>編集モード</h4>
+                            <div class="form-group">
+                                <label>プロジェクト名</label>
+                                <input type="text" class="form-control" value="次世代AI材料探索プロジェクト">
+                            </div>
+                            <div class="form-group">
+                                <label>ステータス</label>
+                                <select class="form-control">
+                                    <option>計画中</option>
+                                    <option selected>進行中</option>
+                                    <option>保留</option>
+                                    <option>完了</option>
+                                    <option>中止</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>プロジェクト説明</label>
+                                <textarea class="form-control" rows="4">AIを活用して、特定の特性を持つ新しい材料を効率的に探索・発見することを目的としたプロジェクト。持続可能な社会の実現に貢献する革新的な材料開発を目指す。主要なKPIは新規材料候補の発見数と、実験検証フェーズへの移行率。</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>開始日</label>
+                                <input type="date" class="form-control" value="2024-03-01">
+                            </div>
+                            <div class="form-group">
+                                <label>目標完了日</label>
+                                <input type="date" class="form-control" value="2024-12-31">
+                            </div>
+                            <div class="form-group">
+                                <label>予算 (円)</label>
+                                <input type="number" class="form-control" value="20000000" step="100000">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section" style="margin-top: 20px;">
+                        <h3>関係者</h3>
+                        <div class="info-item">
+                            <span class="info-label">弊社担当PM:</span> 田中 一郎 (弊社PM)
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">クライアント窓口:</span> 鈴木 正樹様 (株式会社テックリード)
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">担当研究者:</span> 研究者B (ナノテクノロジー専門)
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="metrics-card">
+                        <h3>全体進捗</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 33.3%"></div>
+                        </div>
+                        <div class="metric">33.3%</div>
+                        <div class="metric-label">2/6 タスク完了</div>
+                    </div>
+                    
+                    <div class="metrics-card">
+                        <div class="metric">218</div>
+                        <div class="metric-label">目標完了日まで 日</div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h3>クイックアクション</h3>
+                        <button class="btn btn-secondary btn-full" id="edit-btn" onclick="toggleEditMode()">プロジェクト情報を編集する</button>
+                        <button class="btn btn-primary btn-full" id="save-btn" onclick="saveChanges()" style="display: none;">変更を保存する</button>
+                        <button class="btn btn-secondary btn-full" id="cancel-btn" onclick="cancelEdit()" style="display: none;">キャンセル</button>
+                        <button class="btn btn-secondary btn-full" onclick="showAlert('進捗報告書作成画面へ遷移します')">進捗報告書を作成する</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <h2>最近の活動ログ</h2>
+            <div class="activity-log">
+                <div class="log-item">
+                    <div class="log-time">2024-06-03 11:05</div>
+                    <div class="log-user">システム</div>
+                    <div class="log-action">タスク「初期データ収集・AIモデル設計」のステータスが「進行中」に更新されました。</div>
+                </div>
+                <div class="log-item">
+                    <div class="log-time">2024-06-01 15:30</div>
+                    <div class="log-user">研究者B</div>
+                    <div class="log-action">コメントを投稿しました：「データ収集は現在約60%です」</div>
+                </div>
+                <div class="log-item">
+                    <div class="log-time">2024-05-20 10:00</div>
+                    <div class="log-user">田中 一郎</div>
+                    <div class="log-action">研究者Bと定例ミーティングを実施。次回アクションプランを確認。</div>
+                </div>
+                <div class="log-item">
+                    <div class="log-time">2024-04-15 17:00</div>
+                    <div class="log-user">システム</div>
+                    <div class="log-action">タスク「研究者Bとの連携体制構築」が「完了」しました。</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- タスク管理タブ -->
+        <div id="tasks-tab" class="tab-content">
+            <h2>タスク一覧・管理</h2>
+            
+            <div class="alert alert-info">
+                下の表は直接編集できます。変更はリアルタイムに反映されます（モック上では保存されません）。
+            </div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>タスク名</th>
+                        <th>担当者</th>
+                        <th>期日</th>
+                        <th>ステータス</th>
+                        <th>備考</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>T001</td>
+                        <td>要求定義・スコープ確定</td>
+                        <td>田中 一郎</td>
+                        <td>2024/03/31</td>
+                        <td><span class="status-badge status-completed">完了</span></td>
+                        <td>クライアントと合意済</td>
+                    </tr>
+                    <tr>
+                        <td>T002</td>
+                        <td>研究者Bとの連携体制構築</td>
+                        <td>田中 一郎</td>
+                        <td>2024/04/15</td>
+                        <td><span class="status-badge status-completed">完了</span></td>
+                        <td>NDA締結、定期MTG設定</td>
+                    </tr>
+                    <tr>
+                        <td>T003</td>
+                        <td>初期データ収集・AIモデル設計</td>
+                        <td>研究者B</td>
+                        <td>2024/06/30</td>
+                        <td><span class="status-badge status-progress">進行中</span></td>
+                        <td>必要な論文・特許データ収集フェーズ</td>
+                    </tr>
+                    <tr>
+                        <td>T004</td>
+                        <td>AIモデル開発・学習</td>
+                        <td>研究者B</td>
+                        <td>2024/09/30</td>
+                        <td><span class="status-badge status-pending">未着手</span></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>T005</td>
+                        <td>中間成果報告会準備</td>
+                        <td>田中 一郎</td>
+                        <td>2024/10/01</td>
+                        <td><span class="status-badge status-pending">未着手</span></td>
+                        <td>資料作成、リハーサル</td>
+                    </tr>
+                    <tr>
+                        <td>T006</td>
+                        <td>中間成果報告会実施</td>
+                        <td>田中 一郎, 研究者B</td>
+                        <td>2024/10/15</td>
+                        <td><span class="status-badge status-pending">未着手</span></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <button class="btn btn-primary btn-full" onclick="showAlert('6件のタスク情報が更新されました')">タスクの変更を保存</button>
+            
+            <h3 style="margin-top: 40px;">ガントチャート (イメージ)</h3>
+            <div class="gantt-placeholder">
+                <h4>📊 ガントチャート表示エリア</h4>
+                <p>ここに実際のタスクデータに基づいたガントチャートが表示されます<br>(外部ライブラリAltair等で描画可能)</p>
+            </div>
+        </div>
+        
+        <!-- ドキュメントタブ -->
+        <div id="documents-tab" class="tab-content">
+            <h2>関連ドキュメント</h2>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ファイル名</th>
+                        <th>種類</th>
+                        <th>アップロード日</th>
+                        <th>アップロード者</th>
+                        <th>サイズ</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>D001</td>
+                        <td>プロジェクト計画書_v1.2.pdf</td>
+                        <td>計画書</td>
+                        <td>2024/03/10</td>
+                        <td>田中 一郎</td>
+                        <td>2.5 MB</td>
+                        <td><button class="btn btn-secondary" onclick="showAlert('ファイルをダウンロードします')">ダウンロード</button></td>
+                    </tr>
+                    <tr>
+                        <td>D002</td>
+                        <td>NDA契約書_研究者B_締結済.pdf</td>
+                        <td>契約書</td>
+                        <td>2024/04/10</td>
+                        <td>法務部</td>
+                        <td>0.8 MB</td>
+                        <td><button class="btn btn-secondary" onclick="showAlert('ファイルをダウンロードします')">ダウンロード</button></td>
+                    </tr>
+                    <tr>
+                        <td>D003</td>
+                        <td>先行技術調査レポート_rev1.docx</td>
+                        <td>調査報告</td>
+                        <td>2024/05/15</td>
+                        <td>研究者B</td>
+                        <td>1.2 MB</td>
+                        <td><button class="btn btn-secondary" onclick="showAlert('ファイルをダウンロードします')">ダウンロード</button></td>
+                    </tr>
+                    <tr>
+                        <td>D004</td>
+                        <td>週次進捗報告_20240527.pptx</td>
+                        <td>進捗報告</td>
+                        <td>2024/05/27</td>
+                        <td>田中 一郎</td>
+                        <td>3.1 MB</td>
+                        <td><button class="btn btn-secondary" onclick="showAlert('ファイルをダウンロードします')">ダウンロード</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <div>
+                    <h3>選択ダウンロード</h3>
+                    <div class="form-group">
+                        <label>ダウンロードするドキュメントを選択</label>
+                        <select class="form-control">
+                            <option>プロジェクト計画書_v1.2.pdf</option>
+                            <option>NDA契約書_研究者B_締結済.pdf</option>
+                            <option>先行技術調査レポート_rev1.docx</option>
+                            <option>週次進捗報告_20240527.pptx</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="showAlert('選択されたファイルをダウンロードします')">📄 選択ファイルをダウンロード</button>
+                </div>
+                
+                <div>
+                    <h3>新しいドキュメントをアップロード</h3>
+                    <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+                        <div>ファイルを選択 (複数可)</div>
+                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">PDF, DOCX, XLSX, PPTX, TXT, CSV, JPG, PNG</div>
+                        <input type="file" id="file-input" multiple accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.jpg,.png" style="display: none;">
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>ドキュメントの種類</label>
+                        <select class="form-control">
+                            <option>計画書</option>
+                            <option>契約書</option>
+                            <option>報告書</option>
+                            <option>議事録</option>
+                            <option>データ</option>
+                            <option>その他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>簡単な説明 (任意)</label>
+                        <input type="text" class="form-control" placeholder="ファイルの説明を入力...">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="showAlert('ファイルがアップロードされました')">アップロード実行</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- コミュニケーションタブ -->
+        <div id="communication-tab" class="tab-content">
+            <h2>コメント・ディスカッション</h2>
+            
+            <div class="chat-message">
+                <div class="chat-user">研究者B <span class="chat-time">(2024-06-03 14:30)</span></div>
+                <div class="chat-text">田中さん、順調です。現在XXデータベースの分析を進めており、約70%完了しています。詳細は定例でお話します。</div>
+            </div>
+            
+            <div class="chat-message">
+                <div class="chat-user">田中 一郎 <span class="chat-time">(2024-06-03 10:00)</span></div>
+                <div class="chat-text">研究者Bさん、データ収集の進捗はいかがでしょうか？来週の定例で詳細を伺えればと思います。</div>
+            </div>
+            
+            <div class="chat-message">
+                <div class="chat-user">鈴木 正樹様 (クライアント) <span class="chat-time">(2024-05-28 09:15)</span></div>
+                <div class="chat-text">先日の週次報告ありがとうございました。AIモデルの学習データの品質について、もう少し詳しい情報があれば嬉しいです。</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 12px;">
+                <h3>新しいコメントを投稿</h3>
+                <div class="form-group">
+                    <label>コメント内容</label>
+                    <textarea class="form-control" rows="4" placeholder="プロジェクトに関する連絡や質問を投稿..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>投稿者として</label>
+                    <select class="form-control">
+                        <option>田中 一郎 (弊社PM)</option>
+                        <option>研究者B (ナノテクノロジー専門)</option>
+                        <option>鈴木 正樹様 (株式会社テックリード)</option>
+                        <option>その他ユーザー</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="postComment()">コメントを投稿する</button>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <h3>ミーティング</h3>
+                <div class="info-section">
+                    <ul style="margin-left: 20px; line-height: 1.8;">
+                        <li><strong>次回定例ミーティング:</strong> 2024年6月10日 (月) 14:00 - 15:00 (オンライン)</li>
+                        <li><a href="#" onclick="showAlert('過去のミーティング議事録を表示します')" style="color: #667eea;">過去のミーティング議事録はこちら</a></li>
+                    </ul>
+                    <button class="btn btn-secondary btn-full" style="margin-top: 15px;" onclick="showAlert('カレンダー連携やミーティング設定画面へ遷移します')">新しいミーティングをスケジュール</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 設定タブ -->
+        <div id="settings-tab" class="tab-content">
+            <h2>プロジェクト設定</h2>
+            <div class="alert alert-warning">
+                注意: 以下の設定変更はプロジェクト全体に影響します。
+            </div>
+            
+            <div class="info-section">
+                <h3>通知設定 (このプロジェクト専用)</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" checked>
+                    <label>タスクの更新・遅延時にメール通知を受け取る</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" checked>
+                    <label>新しいドキュメントがアップロードされた際に通知</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox">
+                    <label>新しいコメントが投稿された際に通知</label>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="showAlert('このプロジェクトの通知設定が保存されました')">通知設定を保存</button>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="info-section">
+                <h3>メンバー管理</h3>
+                <div class="form-group">
+                    <label>プロジェクトメンバー</label>
+                    <select class="form-control" multiple style="height: 120px;">
+                        <option selected>田中 一郎 (弊社PM)</option>
+                        <option selected>研究者B (ナノテクノロジー専門)</option>
+                        <option selected>鈴木 正樹様 (株式会社テックリード)</option>
+                        <option>追加メンバーX</option>
+                        <option>追加メンバーY</option>
+                    </select>
+                    <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">Ctrl/Cmdキーを押しながらクリックで複数選択</div>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="showAlert('メンバー情報が更新されました')">メンバー変更を保存</button>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="danger-zone">
+                <h4>危険ゾーン</h4>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="archive-checkbox">
+                    <label for="archive-checkbox">プロジェクトをアーカイブする (読み取り専用になります)</label>
+                </div>
+                <button class="btn btn-secondary btn-full" onclick="archiveProject()" style="margin-bottom: 15px;">アーカイブ実行</button>
+                
+                <button class="btn btn-primary btn-full" onclick="deleteProject()" style="background: #dc3545; border-color: #dc3545;">プロジェクトを削除する</button>
+                <div style="font-size: 12px; color: #721c24; margin-top: 5px;">⚠️ この操作は元に戻せません！</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // すべてのタブコンテンツを非表示
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // 選択されたタブコンテンツを表示
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // タブのactive状態を更新
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function toggleEditMode() {
+            document.getElementById('view-mode').style.display = 'none';
+            document.getElementById('edit-mode').style.display = 'block';
+            document.getElementById('edit-btn').style.display = 'none';
+            document.getElementById('save-btn').style.display = 'block';
+            document.getElementById('cancel-btn').style.display = 'block';
+        }
+
+        function saveChanges() {
+            document.getElementById('view-mode').style.display = 'block';
+            document.getElementById('edit-mode').style.display = 'none';
+            document.getElementById('edit-btn').style.display = 'block';
+            document.getElementById('save-btn').style.display = 'none';
+            document.getElementById('cancel-btn').style.display = 'none';
+            showAlert('プロジェクト情報が更新されました');
+        }
+
+        function cancelEdit() {
+            document.getElementById('view-mode').style.display = 'block';
+            document.getElementById('edit-mode').style.display = 'none';
+            document.getElementById('edit-btn').style.display = 'block';
+            document.getElementById('save-btn').style.display = 'none';
+            document.getElementById('cancel-btn').style.display = 'none';
+        }
+
+        function postComment() {
+            const textarea = document.querySelector('#communication-tab textarea');
+            const select = document.querySelector('#communication-tab select');
+            
+            if (textarea.value.trim() && select.value) {
+                const newComment = document.createElement('div');
+                newComment.className = 'chat-message';
+                newComment.innerHTML = `
+                    <div class="chat-user">${select.value} <span class="chat-time">(${new Date().toLocaleString('ja-JP')})</span></div>
+                    <div class="chat-text">${textarea.value}</div>
+                `;
+                
+                // 最初のコメントの前に挿入
+                const firstComment = document.querySelector('#communication-tab .chat-message');
+                firstComment.parentNode.insertBefore(newComment, firstComment);
+                
+                textarea.value = '';
+                showAlert('コメントが投稿されました');
+            } else {
+                showAlert('コメント内容と投稿者を選択してください');
+            }
+        }
+
+        function archiveProject() {
+            const checkbox = document.getElementById('archive-checkbox');
+            if (checkbox.checked) {
+                showAlert('プロジェクトがアーカイブされました（モック機能）');
+            } else {
+                showAlert('アーカイブするにはチェックボックスを選択してください');
+            }
+        }
+
+        function deleteProject() {
+            if (confirm('本当にプロジェクトを削除しますか？この操作は元に戻せません。')) {
+                showAlert('プロジェクト削除の確認ダイアログが表示されます（モック機能）');
+            }
+        }
+
+        function showAlert(message) {
+            alert(message);
+        }
+
+        // ファイルアップロードの処理
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                let fileNames = [];
+                for (let i = 0; i < files.length; i++) {
+                    fileNames.push(files[i].name);
+                }
+                showAlert(`選択されたファイル: ${fileNames.join(', ')}`);
+            }
+        });
+
+        // 初期化時にプログレスバーをアニメーション
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const progressFill = document.querySelector('.progress-fill');
+                if (progressFill) {
+                    progressFill.style.width = '33.3%';
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

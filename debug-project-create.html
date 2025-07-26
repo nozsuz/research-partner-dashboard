@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト作成デバッグ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .debug-log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 プロジェクト作成デバッグツール</h1>
+    
+    <div id="status-container"></div>
+    
+    <form id="debug-form">
+        <div class="form-group">
+            <label for="project-name">プロジェクト名 *</label>
+            <input type="text" id="project-name" value="テストプロジェクト" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="project-description">プロジェクト概要 *</label>
+            <textarea id="project-description" required>これはプロジェクト作成機能のデバッグ用テストプロジェクトです。</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="project-budget">予算（万円）</label>
+            <input type="number" id="project-budget" value="1000">
+        </div>
+        
+        <div class="form-group">
+            <label for="project-duration">期間（ヶ月）</label>
+            <input type="number" id="project-duration" value="12">
+        </div>
+        
+        <div class="form-group">
+            <label for="research-requirements">研究者への要件</label>
+            <textarea id="research-requirements">AI・機械学習の専門知識</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="project-keywords">関連キーワード</label>
+            <input type="text" id="project-keywords" value="AI, 機械学習, テスト">
+        </div>
+        
+        <button type="button" class="btn" onclick="testLocalStorage()">ローカルストレージテスト</button>
+        <button type="button" class="btn" onclick="testProjectManager()">プロジェクトマネージャーテスト</button>
+        <button type="button" class="btn" onclick="testAPIConnection()">API接続テスト</button>
+        <button type="button" class="btn btn-secondary" onclick="clearLocalStorage()">ローカルストレージクリア</button>
+        <button type="button" class="btn btn-secondary" onclick="showLocalStorage()">ローカルストレージ表示</button>
+    </form>
+    
+    <div id="debug-log" class="debug-log">デバッグログがここに表示されます...\n</div>
+    
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="js/project-manager.js"></script>
+    <script>
+        function log(message) {
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.textContent += `[${timestamp}] ${message}\n`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(message);
+        }
+        
+        function showStatus(message, type = 'info') {
+            const container = document.getElementById('status-container');
+            container.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // ページ読み込み時のチェック
+        document.addEventListener('DOMContentLoaded', function() {
+            log('=== デバッグツール開始 ===');
+            log('config.js読み込み状況: ' + (typeof config !== 'undefined' ? '✅' : '❌'));
+            log('api-client.js読み込み状況: ' + (typeof apiClient !== 'undefined' ? '✅' : '❌'));
+            log('project-manager.js読み込み状況: ' + (typeof window.projectManager !== 'undefined' ? '✅' : '❌'));
+            log('localStorage利用可能: ' + (typeof Storage !== 'undefined' ? '✅' : '❌'));
+            
+            if (typeof window.projectManager !== 'undefined') {
+                log('ProjectManager初期化状況: ✅');
+            } else {
+                log('ProjectManager初期化状況: ❌ - 手動初期化試行中...');
+                try {
+                    window.projectManager = new ProjectManager();
+                    log('ProjectManager手動初期化: ✅');
+                } catch (error) {
+                    log('ProjectManager手動初期化エラー: ' + error.message);
+                }
+            }
+        });
+        
+        // ローカルストレージテスト
+        function testLocalStorage() {
+            log('=== ローカルストレージテスト開始 ===');
+            
+            try {
+                // テストデータ保存
+                const testData = { test: 'value', timestamp: Date.now() };
+                localStorage.setItem('test-project', JSON.stringify(testData));
+                log('ローカルストレージ保存: ✅');
+                
+                // テストデータ読み込み
+                const loaded = JSON.parse(localStorage.getItem('test-project'));
+                log('ローカルストレージ読み込み: ✅ ' + JSON.stringify(loaded));
+                
+                // テストデータ削除
+                localStorage.removeItem('test-project');
+                log('ローカルストレージ削除: ✅');
+                
+                showStatus('ローカルストレージテスト完了 ✅', 'success');
+                
+            } catch (error) {
+                log('ローカルストレージテストエラー: ' + error.message);
+                showStatus('ローカルストレージテスト失敗 ❌: ' + error.message, 'error');
+            }
+        }
+        
+        // プロジェクトマネージャーテスト
+        async function testProjectManager() {
+            log('=== プロジェクトマネージャーテスト開始 ===');
+            
+            if (!window.projectManager) {
+                log('プロジェクトマネージャーが利用できません');
+                showStatus('プロジェクトマネージャーが初期化されていません ❌', 'error');
+                return;
+            }
+            
+            try {
+                // フォームデータ取得
+                const formData = {
+                    name: document.getElementById('project-name').value,
+                    description: document.getElementById('project-description').value,
+                    budget: document.getElementById('project-budget').value,
+                    duration: document.getElementById('project-duration').value,
+                    requirements: document.getElementById('research-requirements').value,
+                    keywords: document.getElementById('project-keywords').value
+                };
+                
+                log('フォームデータ: ' + JSON.stringify(formData, null, 2));
+                
+                // プロジェクト作成実行
+                showStatus('プロジェクト作成中...', 'info');
+                const result = await window.projectManager.createTempProject(formData);
+                
+                log('プロジェクト作成結果: ' + JSON.stringify(result, null, 2));
+                
+                if (result && result.id) {
+                    showStatus('プロジェクト作成成功 ✅ ID: ' + result.id, 'success');
+                    
+                    // 保存されたプロジェクト一覧を確認
+                    const projects = window.projectManager.getTempProjectsLocal();
+                    log('保存済みプロジェクト数: ' + projects.length);
+                    projects.forEach((project, index) => {
+                        log(`プロジェクト${index + 1}: ${project.name} (${project.id})`);
+                    });
+                } else {
+                    showStatus('プロジェクト作成失敗 ❌', 'error');
+                }
+                
+            } catch (error) {
+                log('プロジェクトマネージャーテストエラー: ' + error.message);
+                log('エラースタック: ' + error.stack);
+                showStatus('プロジェクト作成エラー ❌: ' + error.message, 'error');
+            }
+        }
+        
+        // API接続テスト
+        async function testAPIConnection() {
+            log('=== API接続テスト開始 ===');
+            
+            if (!window.apiClient) {
+                log('APIクライアントが利用できません');
+                showStatus('APIクライアントが初期化されていません ❌', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('API接続テスト中...', 'info');
+                
+                // ヘルスチェック
+                log('ヘルスチェック実行中...');
+                const healthResult = await window.apiClient.healthCheck();
+                log('ヘルスチェック結果: ' + JSON.stringify(healthResult, null, 2));
+                
+                // 簡易接続テスト
+                log('簡易接続テスト実行中...');
+                const connectionResult = await window.apiClient.simpleConnectionTest();
+                log('簡易接続テスト結果: ' + JSON.stringify(connectionResult, null, 2));
+                
+                if (connectionResult.status === 'success') {
+                    showStatus('API接続テスト成功 ✅', 'success');
+                } else {
+                    showStatus('API接続テスト失敗 ❌: ' + connectionResult.message, 'error');
+                }
+                
+            } catch (error) {
+                log('API接続テストエラー: ' + error.message);
+                showStatus('API接続エラー ❌: ' + error.message, 'error');
+            }
+        }
+        
+        // ローカルストレージクリア
+        function clearLocalStorage() {
+            try {
+                localStorage.removeItem('tempProjects');
+                localStorage.removeItem('projectDraft');
+                localStorage.removeItem('current_user_id');
+                log('ローカルストレージをクリアしました');
+                showStatus('ローカルストレージクリア完了 ✅', 'success');
+            } catch (error) {
+                log('ローカルストレージクリアエラー: ' + error.message);
+                showStatus('ローカルストレージクリア失敗 ❌', 'error');
+            }
+        }
+        
+        // ローカルストレージ表示
+        function showLocalStorage() {
+            log('=== ローカルストレージ内容 ===');
+            
+            try {
+                const tempProjects = localStorage.getItem('tempProjects');
+                const projectDraft = localStorage.getItem('projectDraft');
+                const userId = localStorage.getItem('current_user_id');
+                
+                log('tempProjects: ' + (tempProjects || '(なし)'));
+                log('projectDraft: ' + (projectDraft || '(なし)'));
+                log('current_user_id: ' + (userId || '(なし)'));
+                
+                if (tempProjects) {
+                    const projects = JSON.parse(tempProjects);
+                    log('保存済みプロジェクト数: ' + projects.length);
+                    projects.forEach((project, index) => {
+                        log(`  ${index + 1}. ${project.name} (${project.id}) - ${project.status}`);
+                    });
+                }
+                
+                showStatus('ローカルストレージ内容を表示しました', 'info');
+                
+            } catch (error) {
+                log('ローカルストレージ表示エラー: ' + error.message);
+                showStatus('ローカルストレージ表示エラー ❌', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

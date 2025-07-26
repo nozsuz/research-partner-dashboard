@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仮プロジェクト管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            color: #5a6fd8;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-draft {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-matching_requested {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            background: white;
+            margin-right: 5px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab:hover {
+            background-color: #f8f9fa;
+        }
+
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        .info-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            margin-right: 10px;
+        }
+        
+        .search-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .selected-researchers-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .matching-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .researcher-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .researcher-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .researcher-info {
+            margin-bottom: 8px;
+            line-height: 1.6;
+            color: #666;
+        }
+        
+        .memo-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .memo-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-style: italic;
+            color: #666;
+            min-height: 40px;
+        }
+        
+        .memo-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .memo-empty {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .request-type-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .consultant-requirements {
+            margin-top: 15px;
+        }
+        
+        .consultant-requirements.show {
+            display: block;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .form-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← ダッシュボードに戻る</a>
+        
+        <div class="header">
+            <h1 id="project-title">📋 仮プロジェクト管理</h1>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="project-status" class="status-badge status-draft">読み込み中...</div>
+                <button id="delete-project-btn" class="btn btn-danger" onclick="deleteCurrentProject()" style="display: none;">
+                    🗑️ プロジェクトを削除
+                </button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('overview')">📊 概要</div>
+            <div class="tab" onclick="showTab('researchers')">👨‍🔬 研究者選択</div>
+            <div class="tab" onclick="showTab('matching')">👨‍💼 コンサルタント依頼</div>
+        </div>
+
+        <!-- 概要タブ -->
+        <div id="overview-tab" class="tab-content active">
+            <div id="project-overview" class="info-section">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    プロジェクト情報を読み込み中...
+                </div>
+            </div>
+        </div>
+
+        <!-- 研究者選択タブ -->
+        <div id="researchers-tab" class="tab-content">
+            <div class="selected-researchers-section" style="background: white; border-left: 4px solid #667eea;">
+                <h3>👨‍🔬 選択済み研究者候補</h3>
+                <p style="color: #666; margin-bottom: 20px;">
+                    研究者検索ページから「プロジェクト候補に追加」した研究者がここに表示されます。
+                </p>
+                <div id="selected-researchers-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        選択済み研究者を読み込み中...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- コンサルタント依頼タブ -->
+        <div id="matching-tab" class="tab-content">
+            <div class="matching-section">
+                <h3>👨‍💼 専門コンサルタントへの依頼</h3>
+                <p>専門コンサルタントが、プロジェクトに最適な研究者をマッチングいたします。</p>
+
+                <div id="matching-prerequisites">
+                    <!-- 前提条件チェック -->
+                </div>
+
+                <!-- コンサルタント依頼セクション -->
+                <div class="request-type-section">
+                    <div class="alert alert-info">
+                        📋 <strong>コンサルタントサービスの特徴</strong>
+                        <ul style="margin-top: 10px; margin-left: 20px; margin-bottom: 10px;">
+                            <li>プロジェクトの要件に基づいた最適な研究者の選定</li>
+                            <li>研究者との交渉・契約手続きの代行</li>
+                            <li>プロジェクト進行中のサポート</li>
+                            <li>専門分野に精通したコンサルタントによる品質保証</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="consultant-requirements" class="consultant-requirements show">
+                        <label for="consultant-requirements-select">コンサルタントへの要求事項 <span style="color: #dc3545;">*</span></label>
+                        <select id="consultant-requirements-select" class="form-control" style="margin-bottom: 15px;" multiple size="8">
+                            <option value="specific_field">特定の研究分野に精通した研究者を希望</option>
+                            <option value="industry_experience">産業界での実務経験がある研究者を優先</option>
+                            <option value="international_network">国際的な研究ネットワークを持つ研究者</option>
+                            <option value="fulltime_participation">プロジェクト期間中のフルタイム参加が可能な研究者</option>
+                            <option value="specific_technology">特定の技術や手法に関する専門知識を持つ研究者</option>
+                            <option value="past_success">過去に類似プロジェクトでの成功実績がある研究者</option>
+                            <option value="publication_record">高い論文発表実績を持つ研究者</option>
+                            <option value="collaborative_experience">企業との共同研究経験が豊富な研究者</option>
+                            <option value="young_researcher">若手研究者（ポスドク・助教レベル）を希望</option>
+                            <option value="senior_researcher">シニア研究者（教授・准教授レベル）を希望</option>
+                        </select>
+                        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">※ 複数選択可能です（Ctrlキーを押しながらクリック）</p>
+                        
+                        <label for="consultant-requirements-additional">追加要求事項（オプション）</label>
+                        <textarea id="consultant-requirements-additional" class="form-control" rows="4" 
+                                 placeholder="上記の選択項目以外に特別な要求がある場合は、こちらに具体的に記載してください...
+
+例：
+・英語でのコミュニケーションが可能な研究者
+・特定の地域（関東圏内など）に所在する研究者
+・その他の特殊な条件や要望"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="matching-message">プロジェクト概要・依頼内容</label>
+                    <textarea id="matching-message" class="form-control" rows="8" 
+                             placeholder="プロジェクトの詳細と協力依頼内容を記載してください...
+
+例：
+【プロジェクト背景】
+弊社では○○分野における新技術開発プロジェクトを企画しており、専門的な知見を持つ研究者との協力を求めています。
+
+【プロジェクト詳細】
+- プロジェクト名：（自動入力）
+- 実施期間：（自動入力）
+- 予算規模：（自動入力）
+- 研究テーマ：具体的な研究内容...
+
+【求める協力内容】
+・研究計画の策定と実行
+・技術的なアドバイスと指導
+・研究成果の評価と検証
+・必要に応じた追加研究の提案
+
+【期待する成果】
+具体的な成果物や目標を記載...
+
+【その他】
+特記事項があれば記載してください。"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="matching-priority">依頼優先度</label>
+                    <select id="matching-priority" class="form-control">
+                        <option value="normal">通常</option>
+                        <option value="high">高</option>
+                        <option value="urgent">緊急</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button id="send-matching-btn" class="btn btn-primary" onclick="sendMatchingRequest()">
+                        👨‍💼 コンサルタントに依頼を送信
+                    </button>
+                </div>
+
+                <div id="matching-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="js/project-manager.js"></script>
+    <script>
+        let currentProjectId = null;
+        let currentProject = null;
+
+        // プロジェクトマネージャーの初期化を確認する関数
+        function ensureProjectManagerReady() {
+            return new Promise((resolve) => {
+                if (window.projectManager) {
+                    resolve();
+                } else {
+                    const checkInterval = setInterval(() => {
+                        if (window.projectManager) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // プロジェクトマネージャーの準備完了を待つ
+            await ensureProjectManagerReady();
+            console.log('✅ プロジェクトマネージャー初期化完了');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            currentProjectId = urlParams.get('id');
+            
+            if (currentProjectId) {
+                loadProject();
+            } else {
+                showError('プロジェクトIDが指定されていません');
+            }
+        });
+
+        async function loadProject() {
+            try {
+                if (window.projectManager) {
+                    currentProject = await window.projectManager.getTempProject(currentProjectId);
+                    
+                    if (currentProject) {
+                        displayProjectOverview();
+                        loadSelectedResearchers();
+                        updateMatchingTab();
+                    } else {
+                        showError('指定されたプロジェクトが見つかりません');
+                    }
+                } else {
+                    showError('プロジェクト管理システムの初期化に失敗しました');
+                }
+            } catch (error) {
+                console.error('プロジェクト読み込みエラー:', error);
+                showError('プロジェクトの読み込みに失敗しました');
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('project-overview').innerHTML = `
+                <div class="alert alert-danger">
+                    <h4>🔴 エラー</h4>
+                    <p>${message}</p>
+                    <a href="index.html" class="btn btn-secondary" style="margin-top: 15px;">ダッシュボードに戻る</a>
+                </div>
+            `;
+        }
+
+        function displayProjectOverview() {
+            document.getElementById('project-title').textContent = `📋 ${currentProject.name}`;
+            
+            // ステータス表示
+            const statusElement = document.getElementById('project-status');
+            const statusText = getStatusText(currentProject.status);
+            statusElement.textContent = statusText;
+            statusElement.className = `status-badge status-${currentProject.status}`;
+            
+            // 削除ボタンを表示
+            document.getElementById('delete-project-btn').style.display = 'block';
+            
+            const overviewHtml = `
+                <h3>📋 プロジェクト基本情報</h3>
+                <div class="info-item">
+                    <span class="info-label">プロジェクト名:</span> ${currentProject.name}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">概要:</span> ${currentProject.description}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">予算:</span> ${currentProject.budget ? `${currentProject.budget}万円` : '未設定'}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">期間:</span> ${currentProject.duration ? `${currentProject.duration}ヶ月` : '未設定'}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">研究者要件:</span> ${currentProject.requirements || '特になし'}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">関連キーワード:</span> ${currentProject.keywords || '未設定'}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">作成日:</span> ${new Date(currentProject.created_at).toLocaleString('ja-JP')}
+                </div>
+                ${currentProject.updated_at ? `
+                <div class="info-item">
+                    <span class="info-label">最終更新:</span> ${new Date(currentProject.updated_at).toLocaleString('ja-JP')}
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('project-overview').innerHTML = overviewHtml;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'draft': '作成中',
+                'active': '進行中',
+                'matching_requested': '依頼送信済み',
+                'completed': '完了'
+            };
+            return statusMap[status] || status;
+        }
+
+        async function loadSelectedResearchers() {
+            const listContainer = document.getElementById('selected-researchers-list');
+            
+            try {
+                // 最新のプロジェクト情報を取得
+                currentProject = await window.projectManager.getTempProject(currentProjectId);
+                
+                const researchers = currentProject.selected_researchers || [];
+                
+                if (researchers.length === 0) {
+                    listContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <p>研究者がまだ選択されていません。</p>
+                            <p><a href="index.html" style="color: #667eea; text-decoration: none;">研究者検索ページ</a>から「プロジェクト候補に追加」してください。</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 研究者分析データと連携して詳細情報を取得
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+
+                let html = '';
+                researchers.forEach((researcher, index) => {
+                    // 分析データを検索
+                    const analysisData = savedAnalyses.find(analysis => 
+                        analysis.researcher_name === researcher.name && 
+                        analysis.affiliation === researcher.affiliation
+                    );
+                    
+                    // AI詳細分析が実行されているかチェック
+                    const hasDetailedAnalysis = analysisData && analysisData.analysis_result && 
+                        (analysisData.analysis_result.detailed_analysis || 
+                         analysisData.analysis_result.scores || 
+                         analysisData.analysis_result.total_papers !== undefined);
+                    const totalScore = analysisData && analysisData.relevance_score ? analysisData.relevance_score : null;
+                    
+                    // メモの表示
+                    const memo = researcher.memo || '';
+                    const memoDisplay = memo ? memo : 'メモが未記入です。研究者に関するメモを追加できます。';
+                    const memoClass = memo ? '' : 'memo-empty';
+                    
+                    html += `
+                        <div class="researcher-card" style="border-left: 4px solid ${hasDetailedAnalysis ? '#4caf50' : '#ddd'};">
+                            <div class="researcher-name" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>${researcher.name}</span>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    ${!hasDetailedAnalysis ? '<span style="background: #ffc107; color: #212529; padding: 4px 8px; border-radius: 8px; font-size: 12px;">AI分析未実行</span>' : ''}
+                                    ${totalScore ? `<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px;">総合評価スコア: ${totalScore}/100</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="researcher-info">所属: ${researcher.affiliation}</div>
+                            <div class="researcher-info">検索クエリ: ${researcher.query || '「不明」'}</div>
+                            <div class="researcher-info" style="color: #666; font-size: 14px;">
+                                保存日時: ${new Date(researcher.added_at).toLocaleString('ja-JP')}
+                            </div>
+                            
+                            <!-- メモセクション -->
+                            <div class="memo-section">
+                                <h5>📝 研究者メモ</h5>
+                                <div id="memo-display-${index}" class="memo-display ${memoClass}">
+                                    ${memoDisplay}
+                                </div>
+                                <div id="memo-edit-${index}" style="display: none;">
+                                    <textarea id="memo-input-${index}" class="memo-input" placeholder="研究者に関するメモを入力してください...">${memo}</textarea>
+                                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                                        <button class="btn btn-success" onclick="saveMemo('${researcher.name.replace(/'/g, "\\'")}', ${index})">
+                                            ✅ 保存
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="cancelMemoEdit(${index})">
+                                            ❌ キャンセル
+                                        </button>
+                                    </div>
+                                </div>
+                                <button id="memo-edit-btn-${index}" class="btn btn-secondary" onclick="editMemo(${index})" style="margin-top: 10px;">
+                                    📝 メモを編集
+                                </button>
+                            </div>
+                            
+                            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                ${!hasDetailedAnalysis && analysisData && analysisData.analysis_id ? `
+                                    <button class="btn btn-primary" onclick="runDetailedAnalysisFromProject('${analysisData.analysis_id}')">
+                                        🤖 AI詳細分析を実行
+                                    </button>
+                                ` : ''}
+                                ${hasDetailedAnalysis ? `
+                                    <a href="researcher-analysis.html?id=${analysisData.analysis_id}" class="btn btn-primary" style="text-decoration: none;">
+                                        📊 詳細を見る
+                                    </a>
+                                ` : ''}
+                                ${researcher.url ? `
+                                    <a href="${researcher.url}" target="_blank" class="btn btn-secondary" style="text-decoration: none;">
+                                        🔗 ResearchMap
+                                    </a>
+                                ` : ''}
+                                <button class="btn btn-danger" onclick="removeResearcher('${researcher.name.replace(/'/g, "\\'")}')" style="margin-left: auto;">
+                                    ❌ 削除
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                listContainer.innerHTML = html;
+                
+            } catch (error) {
+                console.error('選択済み研究者読み込みエラー:', error);
+                listContainer.innerHTML = '<div class="alert alert-warning">選択済み研究者の読み込みに失敗しました</div>';
+            }
+        }
+
+        // メモ編集関数
+        function editMemo(index) {
+            document.getElementById(`memo-display-${index}`).style.display = 'none';
+            document.getElementById(`memo-edit-${index}`).style.display = 'block';
+            document.getElementById(`memo-edit-btn-${index}`).style.display = 'none';
+        }
+
+        function cancelMemoEdit(index) {
+            document.getElementById(`memo-display-${index}`).style.display = 'block';
+            document.getElementById(`memo-edit-${index}`).style.display = 'none';
+            document.getElementById(`memo-edit-btn-${index}`).style.display = 'block';
+        }
+
+        async function saveMemo(researcherName, index) {
+            const memoInput = document.getElementById(`memo-input-${index}`);
+            const memo = memoInput.value.trim();
+            
+            try {
+                const success = await window.projectManager.updateResearcherMemo(currentProjectId, researcherName, memo);
+                
+                if (success) {
+                    // 表示を更新
+                    const memoDisplay = document.getElementById(`memo-display-${index}`);
+                    if (memo) {
+                        memoDisplay.textContent = memo;
+                        memoDisplay.classList.remove('memo-empty');
+                    } else {
+                        memoDisplay.textContent = 'メモが未記入です。研究者に関するメモを追加できます。';
+                        memoDisplay.classList.add('memo-empty');
+                    }
+                    
+                    cancelMemoEdit(index);
+                    alert('✅ メモを保存しました');
+                } else {
+                    alert('❌ メモの保存に失敗しました');
+                }
+            } catch (error) {
+                console.error('メモ保存エラー:', error);
+                alert('❌ メモ保存中にエラーが発生しました');
+            }
+        }
+
+        async function removeResearcher(researcherName) {
+            if (!confirm(`${researcherName}をプロジェクトから削除しますか？`)) {
+                return;
+            }
+
+            try {
+                const success = await window.projectManager.removeResearcherFromProject(currentProjectId, researcherName);
+                
+                if (success) {
+                    alert(`✅ ${researcherName}を削除しました`);
+                    loadSelectedResearchers();
+                    updateMatchingTab();
+                } else {
+                    alert('❌ 削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('研究者削除エラー:', error);
+                alert('❌ 削除処理でエラーが発生しました');
+            }
+        }
+
+        function updateMatchingTab() {
+            const researchers = currentProject.selected_researchers || [];
+            const prerequisitesContainer = document.getElementById('matching-prerequisites');
+            const sendBtn = document.getElementById('send-matching-btn');
+            
+            if (researchers.length === 0) {
+                prerequisitesContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        ⚠️ コンサルタント依頼を送信するには、まず研究者を選択してください。
+                    </div>
+                `;
+                sendBtn.disabled = true;
+            } else if (currentProject.status === 'matching_requested') {
+                prerequisitesContainer.innerHTML = `
+                    <div class="alert alert-success">
+                        ✅ コンサルタントへの依頼は既に送信済みです。コンサルタントからの連絡をお待ちください。
+                    </div>
+                `;
+                sendBtn.disabled = true;
+                sendBtn.textContent = '📤 送信済み';
+            } else {
+                prerequisitesContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        📋 ${researchers.length}名の研究者が選択されています。コンサルタントに依頼を送信できます。
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            ${researchers.map(r => `<li>${r.name} (${r.affiliation})</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                sendBtn.disabled = false;
+            }
+            
+            // メッセージのプレースホルダーを更新
+            updateMessageTemplate();
+        }
+
+        function updateMessageTemplate() {
+            if (!currentProject) return;
+            
+            const messageTextarea = document.getElementById('matching-message');
+            const researchers = currentProject.selected_researchers || [];
+            
+            if (researchers.length > 0) {
+                const template = `【プロジェクト背景】
+弊社では${currentProject.name}における専門的な研究協力を求めており、最適な研究者との連携を希望しています。
+
+【プロジェクト詳細】
+- プロジェクト名：${currentProject.name}
+- 実施期間：${currentProject.duration ? `${currentProject.duration}ヶ月` : '要相談'}
+- 予算規模：${currentProject.budget ? `${currentProject.budget}万円` : '要相談'}
+- プロジェクト概要：${currentProject.description}
+
+【研究者要件】
+${currentProject.requirements || '特になし'}
+
+【関連キーワード】
+${currentProject.keywords || '未設定'}
+
+【求める協力内容】
+・研究計画の策定と実行
+・技術的なアドバイスと指導
+・研究成果の評価と検証
+・必要に応じた追加研究の提案
+
+【期待する成果】
+具体的な成果物や目標をここに記載してください...
+
+【その他】
+特記事項があれば記載してください。`;
+                
+                if (!messageTextarea.value.trim()) {
+                    messageTextarea.value = template;
+                }
+            }
+        }
+
+        async function sendMatchingRequest() {
+            const message = document.getElementById('matching-message').value.trim();
+            const priority = document.getElementById('matching-priority').value;
+            
+            // 選択式の要求事項を取得
+            const consultantRequirementsSelect = document.getElementById('consultant-requirements-select');
+            const selectedRequirements = Array.from(consultantRequirementsSelect.selectedOptions).map(option => option.text);
+            const additionalRequirements = document.getElementById('consultant-requirements-additional').value.trim();
+            
+            // 要求事項を結合
+            let consultantRequirements = '';
+            if (selectedRequirements.length > 0) {
+                consultantRequirements = '【選択項目】\n' + selectedRequirements.map(req => '・' + req).join('\n');
+            }
+            if (additionalRequirements) {
+                if (consultantRequirements) {
+                    consultantRequirements += '\n\n【追加要求事項】\n' + additionalRequirements;
+                } else {
+                    consultantRequirements = additionalRequirements;
+                }
+            }
+            
+            if (!message) {
+                alert('プロジェクト概要・依頼内容を入力してください');
+                return;
+            }
+            
+            if (selectedRequirements.length === 0 && !additionalRequirements) {
+                alert('コンサルタントへの要求事項を選択または入力してください');
+                return;
+            }
+
+            const statusContainer = document.getElementById('matching-status');
+            const sendBtn = document.getElementById('send-matching-btn');
+            
+            // ボタンを無効化
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '📤 送信中...';
+            
+            statusContainer.innerHTML = '<div class="loading"><div class="spinner"></div>コンサルタントへの依頼を送信中...</div>';
+
+            try {
+                // コンサルタントに依頼（固定）
+                const result = await window.projectManager.sendMatchingRequestToConsultant(
+                    currentProjectId, 
+                    message, 
+                    consultantRequirements, 
+                    priority
+                );
+                
+                if (result.status === 'success') {
+                    statusContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            ✅ 専門コンサルタントへの依頼を送信しました！<br>
+                            コンサルタントからの連絡をお待ちください。最適な研究者をマッチングいたします。
+                            ${result.fallback ? '<br><small>※ ローカルに保存されました</small>' : ''}
+                        </div>
+                    `;
+                    
+                    // プロジェクト情報を再読み込み
+                    loadProject();
+                } else {
+                    throw new Error(result.message || 'コンサルタントへの依頼送信に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('コンサルタント依頼エラー:', error);
+                statusContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        ❌ 送信に失敗しました: ${error.message}
+                    </div>
+                `;
+                
+                // ボタンを元に戻す
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '👨‍💼 コンサルタントに依頼を送信';
+            }
+        }
+
+        // プロジェクト削除機能
+        async function deleteCurrentProject() {
+            if (!currentProject || !window.projectManager) {
+                alert('プロジェクトが取得できません');
+                return;
+            }
+            
+            const confirmMessage = `「${currentProject.name}」を削除しますか？\n\nこの操作は取り消すことができません。\n選択された研究者の情報も全て削除されます。`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            const deleteBtn = document.getElementById('delete-project-btn');
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '🔄 削除中...';
+            
+            try {
+                const result = await window.projectManager.deleteTempProject(currentProjectId);
+                
+                if (result.status === 'success') {
+                    alert(`✅ 「${currentProject.name}」を削除しました`);
+                    
+                    // ダッシュボードに戻る
+                    window.location.href = 'index.html';
+                } else {
+                    throw new Error(result.message || '削除に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('プロジェクト削除エラー:', error);
+                alert(`❌ 削除に失敗しました: ${error.message}`);
+                
+                // ボタンを元に戻す
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '🗑️ プロジェクトを削除';
+            }
+        }
+
+        function showTab(tabName) {
+            // タブの切り替え処理
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // プロジェクトからAI詳細分析を実行する関数
+        async function runDetailedAnalysisFromProject(analysisId) {
+            try {
+                // 保存済み分析を取得
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                const analysis = savedAnalyses.find(a => a.analysis_id === analysisId);
+                
+                if (!analysis) {
+                    alert('分析データが見つかりません');
+                    return;
+                }
+                
+                // 必要な情報があるかチェック
+                if (!analysis.researchmap_url || !analysis.query) {
+                    alert('AI詳細分析に必要な情報（ResearchMap URLまたは検索クエリ）が不足しています');
+                    return;
+                }
+                
+                // ボタンを無効化
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '🔄 分析実行中...';
+                
+                // API呼び出し
+                const response = await fetch(`${apiClient.baseURL}/api/analyze-researcher`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        researchmap_url: analysis.researchmap_url,
+                        query: analysis.query,
+                        researcher_basic_info: {
+                            name_ja: analysis.researcher_name
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.analysis) {
+                    // 分析結果を既存のデータに統合
+                    analysis.analysis_result = result.analysis;
+                    analysis.relevance_score = result.analysis.scores?.total || analysis.relevance_score;
+                    analysis.affiliation = result.analysis.affiliation || analysis.affiliation;
+                    analysis.updated_at = new Date().toISOString();
+                    
+                    // ローカルストレージに保存
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                    
+                    alert('✅ AI詳細分析が完了しました！');
+                    
+                    // 研究者一覧を再読み込み
+                    await loadSelectedResearchers();
+                    
+                } else {
+                    throw new Error(result.error || 'AI詳細分析に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('AI詳細分析エラー:', error);
+                alert(`❌ AI詳細分析に失敗しました: ${error.message}`);
+                
+                // ボタンを元に戻す
+                const button = event.target;
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+    </script>
+</body>
+</html>

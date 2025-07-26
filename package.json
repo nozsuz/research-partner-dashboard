@@ -1,0 +1,23 @@
+{
+  "name": "research-partner-dashboard",
+  "version": "2.0.0",
+  "description": "AI研究者検索・マッチングダッシュボード",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static build complete'",
+    "start": "echo 'Static site ready'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nozsuz/research-partner-dashboard.git"
+  },
+  "keywords": ["research", "ai", "dashboard", "vercel"],
+  "author": "Research Team",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nozsuz/research-partner-dashboard/issues"
+  },
+  "homepage": "https://github.com/nozsuz/research-partner-dashboard#readme"
+}

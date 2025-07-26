@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規プロジェクト作成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            color: #5a6fd8;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        
+        .form-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-control::placeholder {
+            color: #adb5bd;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: flex-end;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #f8f9fa;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 2px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .required {
+            color: #dc3545;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-box h3 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .form-container {
+                padding: 25px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← ダッシュボードに戻る</a>
+        
+        <div class="header">
+            <h1>🚀 新規プロジェクト作成</h1>
+            <p>研究開発プロジェクトの基本情報を入力してください</p>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 プロジェクト作成の流れ</h3>
+            <p>
+                1. 基本情報入力 → 2. 仮プロジェクト作成 → 3. 研究者候補選択 → 4. マッチング依頼送信<br>
+                まずは基本的な情報を入力して、仮プロジェクトを作成しましょう。
+            </p>
+        </div>
+
+        <form id="project-create-form" class="form-container">
+            <div class="form-group">
+                <label for="project-name">プロジェクト名 <span class="required">*</span></label>
+                <input type="text" id="project-name" class="form-control" required 
+                       placeholder="例：次世代AI材料探索プロジェクト">
+            </div>
+
+            <div class="form-group">
+                <label for="project-description">プロジェクト概要 <span class="required">*</span></label>
+                <textarea id="project-description" class="form-control" rows="4" required
+                         placeholder="プロジェクトの目的、背景、期待する成果などを記載してください"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="project-budget">予算 (万円)</label>
+                    <input type="number" id="project-budget" class="form-control" min="0" step="1"
+                           placeholder="例：1000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="project-duration">期間 (ヶ月)</label>
+                    <input type="number" id="project-duration" class="form-control" min="1" max="60" step="1"
+                           placeholder="例：12">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="research-requirements">研究者への要件</label>
+                <textarea id="research-requirements" class="form-control" rows="3" 
+                         placeholder="例：AI・機械学習の専門知識、産学連携経験、特定技術分野での実績など"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="project-keywords">関連キーワード</label>
+                <input type="text" id="project-keywords" class="form-control" 
+                       placeholder="例：AI, 機械学習, ナノ材料, バイオテクノロジー（カンマ区切り）">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                    💾 下書き保存
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    ✨ 仮プロジェクトを作成
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="js/project-manager.js"></script>
+    <script>
+        // プロジェクトマネージャーの初期化を確認する関数
+        function ensureProjectManagerReady() {
+            return new Promise((resolve) => {
+                if (window.projectManager) {
+                    resolve();
+                } else {
+                    // project-manager.jsが読み込まれるまで待機
+                    const checkInterval = setInterval(() => {
+                        if (window.projectManager) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // プロジェクトマネージャーの準備完了を待つ
+            await ensureProjectManagerReady();
+            console.log('✅ プロジェクトマネージャー初期化完了');
+            
+            // プロジェクト作成フォームのイベントリスナー
+            document.getElementById('project-create-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                createTempProject();
+            });
+            
+            // 下書きデータがあれば読み込み
+            loadDraftData();
+            
+            // 保留中の研究者情報をチェック
+            checkPendingResearcher();
+        });
+
+        // 保留中の研究者情報をチェック
+        function checkPendingResearcher() {
+            const pendingResearcher = sessionStorage.getItem('pendingResearcher');
+            if (pendingResearcher) {
+                try {
+                    const researcher = JSON.parse(pendingResearcher);
+                    
+                    // 通知メッセージを表示
+                    const infoBox = document.querySelector('.info-box');
+                    if (infoBox) {
+                        infoBox.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)';
+                        infoBox.style.borderLeftColor = '#ffc107';
+                        infoBox.innerHTML = `
+                            <h3>🎯 研究者が選択されています</h3>
+                            <p>
+                                <strong>${researcher.name}</strong> (${researcher.affiliation})がプロジェクト候補として選択されています。<br>
+                                プロジェクト作成後、自動的に追加されます。
+                            </p>
+                        `;
+                    }
+                    
+                    console.log('📌 保留中の研究者を検出:', researcher.name);
+                } catch (error) {
+                    console.error('保留中研究者情報の解析エラー:', error);
+                    sessionStorage.removeItem('pendingResearcher');
+                }
+            }
+        }
+
+        // 保留中の研究者をプロジェクトに追加
+        async function addPendingResearcher(projectId) {
+            const pendingResearcher = sessionStorage.getItem('pendingResearcher');
+            if (!pendingResearcher) return;
+            
+            try {
+                const researcher = JSON.parse(pendingResearcher);
+                console.log('🎯 保留中の研究者をプロジェクトに追加:', researcher.name);
+                
+                const success = await window.projectManager.addResearcherToTempProject(projectId, {
+                    name: researcher.name,
+                    affiliation: researcher.affiliation,
+                    url: researcher.url || '',
+                    query: researcher.query || '',
+                    added_at: new Date().toISOString()
+                });
+                
+                if (success) {
+                    console.log('✅ 研究者自動追加成功:', researcher.name);
+                    
+                    // 研究者分析データにも保存
+                    saveToResearcherAnalysis({
+                        name: researcher.name,
+                        affiliation: researcher.affiliation,
+                        url: researcher.url || '',
+                        query: researcher.query || '',
+                        added_at: new Date().toISOString()
+                    });
+                } else {
+                    console.warn('⚠️ 研究者自動追加失敗:', researcher.name);
+                }
+                
+                // 保留情報をクリア
+                sessionStorage.removeItem('pendingResearcher');
+                
+            } catch (error) {
+                console.error('保留中研究者追加エラー:', error);
+                sessionStorage.removeItem('pendingResearcher');
+            }
+        }
+
+        // 研究者分析データに保存
+        function saveToResearcherAnalysis(researcherData) {
+            try {
+                const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+                
+                // 既に保存済みかチェック
+                const exists = savedAnalyses.some(analysis => 
+                    analysis.researcher_name === researcherData.name && 
+                    analysis.affiliation === researcherData.affiliation
+                );
+                
+                if (!exists) {
+                    const analysisData = {
+                        id: `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                        researcher_name: researcherData.name,
+                        affiliation: researcherData.affiliation,
+                        researchmap_url: researcherData.url,
+                        query: researcherData.query,
+                        saved_at: new Date().toISOString(),
+                        analysis_result: null,
+                        relevance_score: null,
+                        has_detailed_analysis: false
+                    };
+                    
+                    savedAnalyses.push(analysisData);
+                    localStorage.setItem('researchAnalyses', JSON.stringify(savedAnalyses));
+                    
+                    console.log('✅ 研究者分析データに保存:', researcherData.name);
+                }
+            } catch (error) {
+                console.error('研究者分析データ保存エラー:', error);
+            }
+        }
+
+        async function createTempProject() {
+            // プロジェクトマネージャーが利用可能かチェック
+            if (!window.projectManager) {
+                console.error('❌ プロジェクトマネージャーが初期化されていません');
+                alert('❌ システムの初期化中です。少し待ってから再試行してください。');
+                return;
+            }
+
+            const formData = {
+                name: document.getElementById('project-name').value,
+                description: document.getElementById('project-description').value,
+                budget: document.getElementById('project-budget').value,
+                duration: document.getElementById('project-duration').value,
+                requirements: document.getElementById('research-requirements').value,
+                keywords: document.getElementById('project-keywords').value
+            };
+
+            // バリデーション
+            if (!formData.name || !formData.description) {
+                alert('必須項目を入力してください');
+                return;
+            }
+
+            // 作成ボタンを無効化
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '🔄 作成中...';
+
+            try {
+                console.log('📝 プロジェクト作成開始:', formData.name);
+                
+                // プロジェクト管理クラスを使用
+                const project = await window.projectManager.createTempProject(formData);
+                
+                console.log('✅ プロジェクト作成成功:', project);
+                
+                // 保留中の研究者を自動追加
+                await addPendingResearcher(project.id);
+                
+                // 下書きデータをクリア
+                localStorage.removeItem('projectDraft');
+                
+                alert('✅ 仮プロジェクトが作成されました！\n研究者選択画面に移動します。');
+                window.location.href = `temp-project.html?id=${project.id}`;
+                
+            } catch (error) {
+                console.error('❌ プロジェクト作成エラー:', error);
+                alert('❌ プロジェクト作成に失敗しました。詳細: ' + error.message);
+                
+                // ボタンを元に戻す
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+        function saveDraft() {
+            const formData = {
+                name: document.getElementById('project-name').value,
+                description: document.getElementById('project-description').value,
+                budget: document.getElementById('project-budget').value,
+                duration: document.getElementById('project-duration').value,
+                requirements: document.getElementById('research-requirements').value,
+                keywords: document.getElementById('project-keywords').value,
+                saved_at: new Date().toISOString()
+            };
+
+            localStorage.setItem('projectDraft', JSON.stringify(formData));
+            alert('💾 下書きを保存しました');
+        }
+
+        function loadDraftData() {
+            const draftData = localStorage.getItem('projectDraft');
+            if (draftData) {
+                try {
+                    const data = JSON.parse(draftData);
+                    
+                    if (confirm('保存済みの下書きがあります。読み込みますか？')) {
+                        document.getElementById('project-name').value = data.name || '';
+                        document.getElementById('project-description').value = data.description || '';
+                        document.getElementById('project-budget').value = data.budget || '';
+                        document.getElementById('project-duration').value = data.duration || '';
+                        document.getElementById('research-requirements').value = data.requirements || '';
+                        document.getElementById('project-keywords').value = data.keywords || '';
+                        
+                        console.log('📄 下書きデータを読み込みました');
+                    }
+                } catch (error) {
+                    console.error('下書き読み込みエラー:', error);
+                }
+            }
+        }
+
+        // 自動保存機能（オプション）
+        let autoSaveTimer;
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('input', function() {
+                clearTimeout(autoSaveTimer);
+                autoSaveTimer = setTimeout(() => {
+                    saveDraft();
+                }, 30000); // 30秒後に自動保存
+            });
+        });
+    </script>
+</body>
+</html>
