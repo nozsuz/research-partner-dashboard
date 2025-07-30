@@ -779,9 +779,30 @@
             const researcherName = document.getElementById('researcher-name').value.trim();
             const researchmapUrl = document.getElementById('researchmap-url').value.trim();
             const query = document.getElementById('analysis-query').value.trim();
+
+            // --- 修正: クエリも含めて既存の分析データがないか確認 ---
+            const savedAnalyses = JSON.parse(localStorage.getItem('researchAnalyses') || '[]');
+            const existingAnalysis = savedAnalyses.find(analysis => 
+                analysis.researcher_name === researcherName &&
+                analysis.researchmap_url === researchmapUrl &&
+                analysis.query === query
+            );
+
+            if (existingAnalysis) {
+                // 既存の分析レコードが見つかった場合、そのIDと作成日時を引き継ぐ
+                currentAnalysisData = { 
+                    analysis_id: existingAnalysis.analysis_id,
+                    created_at: existingAnalysis.created_at
+                };
+                console.log('既存の分析レコード(同一クエリ)が見つかりました。IDを引き継いで更新します:', existingAnalysis.analysis_id);
+            } else {
+                // 見つからなければ、currentAnalysisDataを初期化
+                currentAnalysisData = {};
+                console.log('新しいクエリによる分析です。新規レコードとして作成します。');
+            }
             
             if (!researcherName || !researchmapUrl || !query) {
-                alert('すべての項目を入力してください');
+                alert('すべての項目を入力���てください');
                 return;
             }
             
@@ -789,11 +810,13 @@
             const contentDiv = document.getElementById('analysis-content');
             resultContainer.style.display = 'block';
             contentDiv.innerHTML = `<div class="loading"><div class="spinner"></div>AI分析を実行中...</div>`;
-            document.getElementById('save-analysis-btn').disabled = true;
+            
+            const saveBtn = document.getElementById('save-analysis-btn');
+            saveBtn.disabled = true;
             
             try {
                 const result = await apiClient.analyzeResearcher(researchmapUrl, query, { name_ja: researcherName }, true);
-                console.log('Analysis result:', result); // Add this line for debugging
+                console.log('Analysis result:', result);
                 if (result.status !== 'success' || !result.analysis) {
                     throw new Error(result.error || '不明なエラー');
                 }
@@ -819,11 +842,16 @@
                     currentAnalysisData.created_at = new Date().toISOString();
                 }
 
-                document.getElementById('save-analysis-btn').disabled = false;
+                // --- 修正: ボタンのテキストもリセット ---
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 この分析結果を保存';
                 document.getElementById('add-current-to-project-btn').style.display = 'inline-block';
             } catch (error) {
                 console.error('分析エラー:', error);
                 contentDiv.innerHTML = `<div class="alert alert-danger">エラーが発生しました: ${error.message}</div>`;
+                // エラー時もボタンを元に戻す
+                saveBtn.disabled = false;
+                saveBtn.textContent = '🤖 AI分析を開始';
             }
         }
 
